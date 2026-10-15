@@ -1,0 +1,303 @@
+@page
+@model DoComply.Pages.SuperAdmin.UsersModel
+@{
+    ViewData["Title"] = "User Management";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/SuperAdmin/Overview">Super Admin</a> / <span>User Management</span>
+        </div>
+        <h1 class="dc-h1">User Management</h1>
+        <p class="dc-body-secondary">Create accounts, assign roles, and manage system access.</p>
+    </div>
+
+    <div>
+        <button type="button" class="dc-btn dc-btn-primary" data-dc-modal-target="createUserModal">
+            <i data-lucide="user-plus"></i> Create Account
+        </button>
+    </div>
+</div>
+
+<!-- Controls Bar -->
+<div class="dc-card" style="margin-bottom: 20px; padding: 14px 20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div style="position:relative; width:320px; max-width:100%;">
+            <i data-lucide="search" style="position:absolute; left:12px; top:11px; width:18px; height:18px; color:var(--dc-text-secondary);"></i>
+            <input type="text" id="userLocalSearch" class="dc-form-control" style="padding-left:38px;" placeholder="Search users by name, role or email..." />
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button type="button" class="dc-btn dc-btn-secondary">
+                <i data-lucide="filter"></i> Filter Role
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table Container -->
+<div class="dc-table-container" data-dc-table-paginate="usersTable" data-dc-search-input="userLocalSearch" data-dc-per-page="12">
+    <table class="dc-table" id="usersTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Username</th>
+                <th>Status</th>
+                <th class="dc-table-action-col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model.UsersList)
+            {
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="dc-avatar" style="width:32px; height:32px; font-size:12px;">
+                                @(string.IsNullOrEmpty(user.FullName) ? "U" : user.FullName.Substring(0, 1))
+                            </div>
+                            <strong>@user.FullName</strong>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="dc-caption" style="font-weight:600; color:var(--dc-navy-primary);">@(user.Role?.RoleName ?? "Administrator")</span>
+                    </td>
+                    <td>@user.Username</td>
+                    <td>
+                        <span class="dc-status-chip @(user.Status == "Active" ? "valid" : "missing")">
+                            <span class="dc-status-dot"></span> @user.Status
+                        </span>
+                    </td>
+                    <td class="dc-table-action-col">
+                        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="openUserViewModal('@user.FullName', '@(user.Role?.RoleName ?? "Administrator")', '@user.Username')">
+                            View
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <partial name="_Pagination" model="(Model.UsersList.Count, 12, 1)" />
+</div>
+
+<!-- Modal 1: Create Account Modal -->
+<div id="createUserModal" class="dc-modal-backdrop">
+    <div class="dc-modal-surface">
+        <div class="dc-modal-header">
+            <h3 class="dc-modal-title">Create New User Account</h3>
+            <button type="button" class="dc-modal-close" data-dc-modal-dismiss="createUserModal">
+                <i data-lucide="x" style="width:18px; height:18px;"></i>
+            </button>
+        </div>
+        <form id="createUserForm" onsubmit="handleCreateUserSubmit(event)">
+            <div class="dc-modal-body">
+                <div class="dc-form-group">
+                    <label class="dc-form-label">Full Name</label>
+                    <input type="text" id="newFullName" class="dc-form-control" placeholder="e.g. Maria Santos" required />
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label">System Role</label>
+                    <select id="newRole" class="dc-form-control" required>
+                        <option value="Super Admin">Super Admin</option>
+                        <option value="Administrator" selected>Administrator</option>
+                        <option value="Staff-HR">Staff-HR</option>
+                        <option value="Supplier">Supplier</option>
+                    </select>
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label">Username / Email</label>
+                    <input type="email" id="newUsername" class="dc-form-control" placeholder="maria@cccorp.com" required />
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label">Password</label>
+                    <input type="password" id="newPassword" class="dc-form-control dc-password-input" 
+                           data-tracker="createPassTracker" 
+                           data-confirm="newConfirmPassword" 
+                           data-submit-btn="submitCreateUserBtn" 
+                           placeholder="••••••••••••" required />
+
+                    <!-- Password Tracker Component -->
+                    <div id="createPassTracker" class="dc-password-tracker">
+                        <div class="dc-tracker-item" data-rule="rule-length">
+                            <span class="dc-tracker-icon"></span> At least 12 characters
+                        </div>
+                        <div class="dc-tracker-item" data-rule="rule-uppercase">
+                            <span class="dc-tracker-icon"></span> One uppercase letter
+                        </div>
+                        <div class="dc-tracker-item" data-rule="rule-lowercase">
+                            <span class="dc-tracker-icon"></span> One lowercase letter
+                        </div>
+                        <div class="dc-tracker-item" data-rule="rule-number">
+                            <span class="dc-tracker-icon"></span> One number
+                        </div>
+                        <div class="dc-tracker-item" data-rule="rule-special">
+                            <span class="dc-tracker-icon"></span> One special character
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label">Confirm Password</label>
+                    <input type="password" id="newConfirmPassword" class="dc-form-control" placeholder="••••••••••••" required />
+                    <span id="createPassTracker-match-error" class="dc-form-error" style="display:none; margin-top:4px;">Passwords do not match.</span>
+                </div>
+            </div>
+            <div class="dc-modal-footer">
+                <button type="button" class="dc-btn dc-btn-secondary" data-dc-modal-dismiss="createUserModal">Cancel</button>
+                <button type="submit" id="submitCreateUserBtn" class="dc-btn dc-btn-primary" disabled>Create Account</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 2: User View & Change Password Modal -->
+<div id="userViewModal" class="dc-modal-backdrop">
+    <div class="dc-modal-surface">
+        <div class="dc-modal-header">
+            <h3 class="dc-modal-title">Account Details</h3>
+            <button type="button" class="dc-modal-close" data-dc-modal-dismiss="userViewModal">
+                <i data-lucide="x" style="width:18px; height:18px;"></i>
+            </button>
+        </div>
+        <div class="dc-modal-body">
+            <!-- User Header Card -->
+            <div style="display:flex; align-items:center; gap:16px; padding:16px; background:#F8FAFC; border-radius:var(--dc-radius); border:1px solid var(--dc-border); margin-bottom:20px;">
+                <div id="viewUserAvatar" class="dc-avatar" style="width:48px; height:48px; font-size:18px;">JD</div>
+                <div>
+                    <div id="viewUserFullName" style="font-size:16px; font-weight:700; color:var(--dc-text-primary);">Juan Dela Cruz</div>
+                    <div id="viewUserUsername" class="dc-caption" style="color:var(--dc-text-secondary);">juan@cccorp.com</div>
+                    <div style="margin-top:4px; display:flex; align-items:center; gap:8px;">
+                        <span id="viewUserRole" class="dc-caption" style="font-weight:600; color:var(--dc-navy-primary);">Administrator</span>
+                        <span class="dc-status-chip valid"><span class="dc-status-dot"></span> Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Password Section -->
+            <h4 style="font-size:14px; font-weight:600; margin-bottom:12px;">Change User Password</h4>
+            
+            <div id="passwordChangeSuccessAlert" class="dc-card" style="display:none; background:#E6F4EA; border-color:#1F8A4C; padding:12px; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:8px; color:#1F8A4C; font-weight:600; font-size:13px;">
+                    <i data-lucide="check-circle" style="width:18px; height:18px;"></i>
+                    <span>Password changed successfully.</span>
+                </div>
+            </div>
+
+            <div class="dc-form-group">
+                <label class="dc-form-label">New Password</label>
+                <input type="password" id="changePasswordInput" class="dc-form-control dc-password-input"
+                       data-tracker="changePassTracker"
+                       data-confirm="changeConfirmPasswordInput"
+                       data-submit-btn="submitChangePasswordBtn"
+                       placeholder="••••••••••••" />
+
+                <!-- Password Tracker -->
+                <div id="changePassTracker" class="dc-password-tracker">
+                    <div class="dc-tracker-item" data-rule="rule-length"><span class="dc-tracker-icon"></span> At least 12 characters</div>
+                    <div class="dc-tracker-item" data-rule="rule-uppercase"><span class="dc-tracker-icon"></span> One uppercase letter</div>
+                    <div class="dc-tracker-item" data-rule="rule-lowercase"><span class="dc-tracker-icon"></span> One lowercase letter</div>
+                    <div class="dc-tracker-item" data-rule="rule-number"><span class="dc-tracker-icon"></span> One number</div>
+                    <div class="dc-tracker-item" data-rule="rule-special"><span class="dc-tracker-icon"></span> One special character</div>
+                </div>
+            </div>
+
+            <div class="dc-form-group">
+                <label class="dc-form-label">Confirm New Password</label>
+                <input type="password" id="changeConfirmPasswordInput" class="dc-form-control" placeholder="••••••••••••" />
+                <span id="changePassTracker-match-error" class="dc-form-error" style="display:none; margin-top:4px;">Passwords do not match.</span>
+            </div>
+        </div>
+        <div class="dc-modal-footer">
+            <button type="button" class="dc-btn dc-btn-secondary" data-dc-modal-dismiss="userViewModal">Close</button>
+            <button type="button" id="submitChangePasswordBtn" class="dc-btn dc-btn-primary" onclick="handleChangePasswordSubmit()" disabled>Change Password</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openUserViewModal(name, role, username) {
+            document.getElementById('viewUserFullName').textContent = name;
+            document.getElementById('viewUserRole').textContent = role;
+            document.getElementById('viewUserUsername').textContent = username;
+            document.getElementById('viewUserAvatar').textContent = name ? name.charAt(0) : 'U';
+            document.getElementById('passwordChangeSuccessAlert').style.display = 'none';
+            openDcModal('userViewModal');
+        }
+
+        async function handleCreateUserSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('newFullName').value;
+            const role = document.getElementById('newRole').value;
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+
+            try {
+                const response = await fetch('/SuperAdmin/Users?handler=CreateUser', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullName: name, role: role, username: username, password: password })
+                });
+                const res = await response.json();
+                if (res.success) {
+                    const tbody = document.querySelector('#usersTable tbody');
+                    const newRow = document.createElement('tr');
+                    newRow.style.backgroundColor = '#EBF2FA';
+                    newRow.innerHTML = `
+                        <td>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div class="dc-avatar" style="width:32px; height:32px; font-size:12px;">${name.charAt(0)}</div>
+                                <strong>${name}</strong>
+                            </div>
+                        </td>
+                        <td><span class="dc-caption" style="font-weight:600; color:var(--dc-navy-primary);">${res.user.role}</span></td>
+                        <td>${username}</td>
+                        <td><span class="dc-status-chip valid"><span class="dc-status-dot"></span> Active</span></td>
+                        <td class="dc-table-action-col">
+                            <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="openUserViewModal('${name}', '${res.user.role}', '${username}')">View</button>
+                        </td>
+                    `;
+                    tbody.insertBefore(newRow, tbody.firstChild);
+
+                    closeDcModal('createUserModal');
+                    document.getElementById('createUserForm').reset();
+                    showToast(`User account created and saved in database for ${name}`);
+                } else {
+                    showToast(res.message || 'Error creating user');
+                }
+            } catch (err) {
+                showToast('Error saving user to database');
+            }
+        }
+
+        async function handleChangePasswordSubmit() {
+            const username = document.getElementById('viewUserUsername').textContent;
+            const newPassword = document.getElementById('changePasswordInput').value;
+
+            try {
+                const response = await fetch('/SuperAdmin/Users?handler=ChangePassword', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, newPassword: newPassword })
+                });
+                const res = await response.json();
+                if (res.success) {
+                    document.getElementById('changePasswordInput').value = '';
+                    document.getElementById('changeConfirmPasswordInput').value = '';
+                    document.getElementById('passwordChangeSuccessAlert').style.display = 'block';
+                    document.getElementById('submitChangePasswordBtn').disabled = true;
+                    showToast('Password changed successfully and hashed with BCrypt in database.');
+                } else {
+                    showToast(res.message || 'Error changing password');
+                }
+            } catch (err) {
+                showToast('Error updating password in database');
+            }
+        }
+    </script>
+}

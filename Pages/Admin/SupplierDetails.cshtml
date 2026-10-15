@@ -1,0 +1,217 @@
+@page
+@model DoComply.Pages.Admin.SupplierDetailsModel
+@{
+    ViewData["Title"] = Model.Name + " - Compliance Standing";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Admin/Dashboard">Administrator</a> / <a href="/Admin/Suppliers">Suppliers</a> / <span>@Model.Name</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:16px; margin-top:4px;">
+            <h1 class="dc-h1">@Model.Name</h1>
+            <span class="dc-status-chip valid"><span class="dc-status-dot"></span> Active Supplier</span>
+        </div>
+    </div>
+
+    <!-- Prototype State Toggle Controls -->
+    <div style="display:flex; align-items:center; gap:8px; background:#FFFFFF; padding:6px; border:1px solid var(--dc-border); border-radius:var(--dc-radius);">
+        <span class="dc-caption" style="font-weight:600; padding:0 8px;">Demo Variant:</span>
+        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="setSupplierDetailVariant('attention')">
+            Attention Required (Default)
+        </button>
+        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="setSupplierDetailVariant('all-valid')">
+            All Requirements Valid
+        </button>
+    </div>
+</div>
+
+<!-- Supplier Summary Header Card -->
+<div class="dc-card" style="margin-bottom: 24px; padding: 24px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+        <div>
+            <div style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--dc-text-secondary); margin-bottom:4px;">
+                Overall Compliance Position
+            </div>
+            <div id="supplierBadgeContainer">
+                <partial name="_ComplianceBadge" model="(Model.Status, Model.Reasons)" />
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:32px; border-left:1px solid var(--dc-border); padding-left:32px;">
+            <div>
+                <div class="dc-caption">Contact Person</div>
+                <div style="font-weight:600; color:var(--dc-text-primary);">@Model.ContactPerson</div>
+            </div>
+            <div>
+                <div class="dc-caption">Email Address</div>
+                <div style="font-weight:600; color:var(--dc-text-primary);">@Model.EmailAddress</div>
+            </div>
+            <div>
+                <div class="dc-caption">Requirements Verified</div>
+                <div id="verifiedCountText" style="font-weight:600; color:var(--dc-text-primary);">@Model.ValidCount of @Model.TotalCount Valid</div>
+            </div>
+            <div>
+                <div class="dc-caption">BIR TIN (LookupTax Verified)</div>
+                <div style="font-weight:600; color:var(--dc-text-primary); font-family:monospace; display:flex; align-items:center; gap:6px;">
+                    @Model.SupplierTin
+                    <span class="dc-status-chip valid" style="font-size:10px; padding:2px 6px;">
+                        <span class="dc-status-dot"></span> ACTIVE
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Checklist Card -->
+<div class="dc-card">
+    <div class="dc-card-header">
+        <h3 class="dc-card-title">Compliance Checklist</h3>
+        <span class="dc-caption">@Model.TotalCount Standard Mandates</span>
+    </div>
+
+    <div class="dc-table-container">
+        <table class="dc-table" id="supplierChecklistTable">
+            <thead>
+                <tr>
+                    <th>Requirement</th>
+                    <th>Submitted</th>
+                    <th>Verification</th>
+                    <th>Expiry</th>
+                    <th class="dc-table-action-col">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.ChecklistItems.Any())
+                {
+                    @foreach (var item in Model.ChecklistItems)
+                    {
+                        <tr>
+                            <td><strong>@item.RequirementName</strong></td>
+                            <td>
+                                @if (item.IsSubmitted == true)
+                                {
+                                    <span class="dc-caption" style="color:#1F8A4C; font-weight:600;">✓ Submitted</span>
+                                }
+                                else
+                                {
+                                    <span class="dc-caption" style="color:#C62828; font-weight:600;">✗ Missing</span>
+                                }
+                            </td>
+                            <td>
+                                <partial name="_StatusChip" model='@(item.EffectiveStatus ?? "Missing")' />
+                            </td>
+                            <td>
+                                @(item.ExpiryDate.HasValue ? item.ExpiryDate.Value.ToString("MMM dd, yyyy") : (item.ExpiryRequired ? "—" : "No expiry"))
+                            </td>
+                            <td class="dc-table-action-col">
+                                @if (item.EffectiveStatus == "Pending Verification" && item.DocumentSubmissionId.HasValue)
+                                {
+                                    <a href="/Admin/DocumentReview?id=@item.DocumentSubmissionId&supplier=@Uri.EscapeDataString(Model.Name)&doc=@Uri.EscapeDataString(item.RequirementName)" class="dc-btn dc-btn-primary dc-btn-sm">Review</a>
+                                }
+                                else if (item.IsSubmitted == true)
+                                {
+                                    <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="showToast('Viewing @item.OriginalFileName')">View File</button>
+                                }
+                                else
+                                {
+                                    <span class="dc-caption">Awaiting Upload</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <!-- Fallback prototype rows -->
+                    <tr>
+                        <td><strong>Business Permit</strong></td>
+                        <td><span class="dc-caption" style="color:#1F8A4C; font-weight:600;">✓ Submitted</span></td>
+                        <td><span class="dc-status-chip valid"><span class="dc-status-dot"></span> Valid</span></td>
+                        <td>Dec. 31, 2026</td>
+                        <td class="dc-table-action-col">
+                            <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm">View File</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>BIR Registration</strong></td>
+                        <td><span class="dc-caption" style="color:#1F8A4C; font-weight:600;">✓ Submitted</span></td>
+                        <td><span class="dc-status-chip valid"><span class="dc-status-dot"></span> Valid</span></td>
+                        <td>No expiry</td>
+                        <td class="dc-table-action-col">
+                            <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm">View File</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tax Clearance</strong></td>
+                        <td><span class="dc-caption" style="color:#1F8A4C; font-weight:600;">✓ Submitted</span></td>
+                        <td><span class="dc-status-chip valid"><span class="dc-status-dot"></span> Valid</span></td>
+                        <td>Nov. 30, 2026</td>
+                        <td class="dc-table-action-col">
+                            <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm">View File</button>
+                        </td>
+                    </tr>
+                    <tr id="safetyCertRow">
+                        <td><strong>Safety Certificate</strong></td>
+                        <td><span class="dc-caption" style="color:#1F8A4C; font-weight:600;">✓ Submitted</span></td>
+                        <td><span class="dc-status-chip pending-verification"><span class="dc-status-dot"></span> Pending Verification</span></td>
+                        <td>Dec. 15, 2026</td>
+                        <td class="dc-table-action-col">
+                            <a href="/Admin/DocumentReview" class="dc-btn dc-btn-primary dc-btn-sm">Review</a>
+                        </td>
+                    </tr>
+                    <tr id="dataPrivacyRow">
+                        <td><strong>Data Privacy Agreement</strong></td>
+                        <td><span class="dc-caption" style="color:#C62828; font-weight:600;">✗ Missing</span></td>
+                        <td><span class="dc-status-chip missing"><span class="dc-status-dot"></span> Missing</span></td>
+                        <td>—</td>
+                        <td class="dc-table-action-col">
+                            <span class="dc-caption">Awaiting Upload</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function setSupplierDetailVariant(variant) {
+            const badgeContainer = document.getElementById('supplierBadgeContainer');
+            const verifiedCount = document.getElementById('verifiedCountText');
+            const safetyRow = document.getElementById('safetyCertRow');
+            const privacyRow = document.getElementById('dataPrivacyRow');
+
+            if (variant === 'all-valid') {
+                badgeContainer.innerHTML = `
+                    <div class="dc-compliance-badge-wrapper">
+                        <div class="dc-compliance-badge compliant"><span class="dc-status-dot"></span> COMPLIANT</div>
+                        <div class="dc-compliance-reasons">All 5 required documents verified & valid</div>
+                    </div>
+                `;
+                verifiedCount.textContent = '5 of 5 Valid';
+
+                safetyRow.innerHTML = `
+                    <td><strong>Safety Certificate</strong></td>
+                    <td><span class="dc-caption" style="color:#1F8A4C; font-weight:600;">✓ Submitted</span></td>
+                    <td><span class="dc-status-chip valid"><span class="dc-status-dot"></span> Valid</span></td>
+                    <td>Dec. 15, 2026</td>
+                    <td class="dc-table-action-col"><button type="button" class="dc-btn dc-btn-secondary dc-btn-sm">View File</button></td>
+                `;
+
+                privacyRow.innerHTML = `
+                    <td><strong>Data Privacy Agreement</strong></td>
+                    <td><span class="dc-caption" style="color:#1F8A4C; font-weight:600;">✓ Submitted</span></td>
+                    <td><span class="dc-status-chip valid"><span class="dc-status-dot"></span> Valid</span></td>
+                    <td>No expiry</td>
+                    <td class="dc-table-action-col"><button type="button" class="dc-btn dc-btn-secondary dc-btn-sm">View File</button></td>
+                `;
+            } else {
+                window.location.reload();
+            }
+        }
+    </script>
+}

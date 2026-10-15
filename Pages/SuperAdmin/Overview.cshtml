@@ -1,0 +1,119 @@
+@page
+@model DoComply.Pages.SuperAdmin.OverviewModel
+@{
+    ViewData["Title"] = "Super Admin Overview";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/SuperAdmin/Overview">Super Admin</a> / <span>Overview</span>
+        </div>
+        <h1 class="dc-h1">System Overview</h1>
+        <p class="dc-body-secondary">High-level account metrics, role allocation, and operational activity across CC.</p>
+    </div>
+</div>
+
+<!-- Metric Summary Cards -->
+<div class="dc-summary-grid">
+    <div class="dc-metric-card">
+        <div class="dc-metric-icon-bg"><i data-lucide="users"></i></div>
+        <span class="dc-metric-label">Active Users</span>
+        <span class="dc-metric-value">@Model.ActiveUsers</span>
+    </div>
+
+    <div class="dc-metric-card">
+        <div class="dc-metric-icon-bg"><i data-lucide="user-check"></i></div>
+        <span class="dc-metric-label">Administrators</span>
+        <span class="dc-metric-value">@Model.Administrators</span>
+    </div>
+
+    <div class="dc-metric-card">
+        <div class="dc-metric-icon-bg"><i data-lucide="building-2"></i></div>
+        <span class="dc-metric-label">Registered Suppliers</span>
+        <span class="dc-metric-value">@Model.SuppliersCount</span>
+    </div>
+
+    <div class="dc-metric-card">
+        <div class="dc-metric-icon-bg"><i data-lucide="activity"></i></div>
+        <span class="dc-metric-label">Actions Today</span>
+        <span class="dc-metric-value">@Model.ActionsToday</span>
+    </div>
+</div>
+
+<div class="dc-grid-12">
+    <!-- Role Distribution Card -->
+    <div class="dc-col-8">
+        <div class="dc-card">
+            <div class="dc-card-header">
+                <h3 class="dc-card-title">User Role Distribution</h3>
+                <span class="dc-caption">@Model.TotalUsers Total Accounts</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:20px; padding:10px 0;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-weight:500;">
+                        <span>Suppliers</span>
+                        <span>@Model.SupplierAccountsCount Accounts (@Model.SupplierPercent%)</span>
+                    </div>
+                    <div style="height:10px; background:#EEF1F5; border-radius:5px; overflow:hidden;">
+                        <div style="width:@Model.SupplierPercent%; height:100%; background:var(--dc-navy-primary); border-radius:5px;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-weight:500;">
+                        <span>Staff / HR</span>
+                        <span>@Model.StaffAccountsCount Accounts (@Model.StaffPercent%)</span>
+                    </div>
+                    <div style="height:10px; background:#EEF1F5; border-radius:5px; overflow:hidden;">
+                        <div style="width:@Model.StaffPercent%; height:100%; background:var(--dc-navy-active); border-radius:5px;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-weight:500;">
+                        <span>Administrators</span>
+                        <span>@Model.AdminAccountsCount Accounts (@Model.AdminPercent%)</span>
+                    </div>
+                    <div style="height:10px; background:#EEF1F5; border-radius:5px; overflow:hidden;">
+                        <div style="width:@Model.AdminPercent%; height:100%; background:var(--dc-green-approve); border-radius:5px;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-weight:500;">
+                        <span>Super Admins</span>
+                        <span>@Model.SuperAdminAccountsCount Accounts (@Model.SuperAdminPercent%)</span>
+                    </div>
+                    <div style="height:10px; background:#EEF1F5; border-radius:5px; overflow:hidden;">
+                        <div style="width:@Model.SuperAdminPercent%; height:100%; background:#7C3AED; border-radius:5px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Action / Security Panel -->
+    <div class="dc-col-4">
+        <div class="dc-card">
+            <div class="dc-card-header">
+                <h3 class="dc-card-title">Quick Actions</h3>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <a href="/SuperAdmin/Users" class="dc-btn dc-btn-secondary" style="justify-content:flex-start;">
+                    <i data-lucide="user-plus"></i> Create New Account
+                </a>
+                <a href="/SuperAdmin/Roles" class="dc-btn dc-btn-secondary" style="justify-content:flex-start;">
+                    <i data-lucide="shield-alert"></i> Review Role Permissions
+                </a>
+                <a href="/SuperAdmin/AuditLog" class="dc-btn dc-btn-secondary" style="justify-content:flex-start;">
+                    <i data-lucide="list"></i> View System Audit Log
+                </a>
+                <a href="/SuperAdmin/Settings" class="dc-btn dc-btn-secondary" style="justify-content:flex-start;">
+                    <i data-lucide="sliders"></i> Manage System Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

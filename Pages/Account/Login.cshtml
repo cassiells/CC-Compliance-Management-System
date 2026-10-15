@@ -1,0 +1,424 @@
+@page
+@model DoComply.Pages.Account.LoginModel
+@{
+    Layout = "_LoginLayout";
+    ViewData["Title"] = "Sign In";
+}
+
+<div class="dc-login-container">
+    <!-- Left Hero Panel -->
+    <div class="dc-login-left">
+        <div class="dc-login-brand">
+            <partial name="_Logo" />
+        </div>
+
+        <div class="dc-login-content-hero">
+            <div class="dc-eyebrow">COMPLIANCE, CONTINUOUSLY VERIFIED</div>
+            <h1 class="dc-login-hero-title" style="color: #FFFFFF;">From requirement to renewal, every obligation stays visible.</h1>
+            <p class="dc-login-hero-sub">
+                Automate compliance checks, streamline verification queues, and manage active supplier permits across all CC Corporation departments.
+            </p>
+
+            <!-- Layered Visual Cards Preview -->
+            <div class="dc-visual-cards-preview">
+                <div class="dc-preview-card">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="file-check" style="color:#4ADE80; width:22px; height:22px;"></i>
+                        <div>
+                            <div style="font-weight:600; font-size:14px; color:#FFFFFF;">Business Permit 2026</div>
+                            <div style="font-size:12px; color:#93C5FD;">ABC Office Supplies • Valid</div>
+                        </div>
+                    </div>
+                    <span class="dc-status-chip valid"><span class="dc-status-dot"></span> Valid</span>
+                </div>
+
+                <div class="dc-preview-card" style="transform: scale(0.98); opacity: 0.9;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="alert-triangle" style="color:#FB923C; width:22px; height:22px;"></i>
+                        <div>
+                            <div style="font-weight:600; font-size:14px; color:#FFFFFF;">Tax Clearance Certificate</div>
+                            <div style="font-size:12px; color:#93C5FD;">XYZ Training Services • Expires in 30 days</div>
+                        </div>
+                    </div>
+                    <span class="dc-status-chip expiring-soon"><span class="dc-status-dot"></span> Expiring Soon</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="font-size:12px; color:#94A3B8;">
+            Enterprise compliance management for departments and suppliers © 2026 CC Corporation
+        </div>
+    </div>
+
+    <!-- Right Login Form Panel -->
+    <div class="dc-login-right">
+        <div style="margin-bottom: 28px;">
+            <div class="dc-eyebrow" style="color:var(--dc-navy-primary);">SECURE ACCOUNT ACCESS</div>
+            <h2 class="dc-h1" style="margin-bottom:8px;">Welcome back</h2>
+            <p class="dc-body-secondary">Enter your credentials to access the CC management console.</p>
+        </div>
+
+        <!-- Quick Prototype Role Selector Buttons -->
+        <!-- <div style="margin-bottom: 20px; padding: 14px; background: #F8FAFC; border: 1px solid var(--dc-border); border-radius: var(--dc-radius);">
+            <span class="dc-caption" style="font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--dc-text-secondary); display:block; margin-bottom:8px;">
+                Select Role Preset for Demo:
+            </span>
+            <div class="dc-role-switcher-grid">
+                <button type="button" class="dc-role-preset-btn active" data-role="Administrator">
+                    <i data-lucide="user-check" style="width:14px; height:14px;"></i> Admin
+                </button>
+                <button type="button" class="dc-role-preset-btn" data-role="SuperAdmin">
+                    <i data-lucide="shield" style="width:14px; height:14px;"></i> Super Admin
+                </button>
+                <button type="button" class="dc-role-preset-btn" data-role="Staff">
+                    <i data-lucide="users" style="width:14px; height:14px;"></i> Staff / HR
+                </button>
+                <button type="button" class="dc-role-preset-btn" data-role="Supplier">
+                    <i data-lucide="building-2" style="width:14px; height:14px;"></i> Supplier
+                </button>
+            </div>
+        </div> -->
+
+        <!-- Incremental Lockout Alert Banner with Live Countdown -->
+        <div id="lockoutBanner" class="dc-lockout-banner" style="display: @(Model.IsLockedOut ? "block" : "none");">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <div style="background: #FEE2E2; padding: 8px; border-radius: 8px; color: #DC2626;">
+                    <i data-lucide="shield-alert" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; flex-wrap: wrap; gap: 8px;">
+                        <strong style="color: #991B1B; font-size: 14px;">Account Temporarily Locked (5 Failed Logins)</strong>
+                        <span id="lockoutTimerBadge" class="dc-timer-badge">
+                            <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
+                            <span id="lockoutTimeText">01:00</span>
+                        </span>
+                    </div>
+                    <p id="lockoutBannerMessage" style="color: #B91C1C; font-size: 13px; margin: 0 0 6px 0; line-height: 1.4;">
+                        Security lockout active. Please wait for the countdown timer to finish before submitting credentials again.
+                    </p>
+                    <div style="font-size: 11px; color: #7F1D1D; background: rgba(239, 68, 68, 0.08); padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;">
+                        <i data-lucide="info" style="width: 12px; height: 12px;"></i>
+                        <span>Rule: 5 failed logins = 1 min lockout. Next 5 failed logins = +1 additional min.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage) && !Model.IsLockedOut)
+        {
+            <div id="generalErrorAlert" class="dc-card" style="background:#FDE7E7; border-color:#FCA5A5; padding:12px 16px; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:8px; color:var(--dc-red-reject); font-size:13px; font-weight:600;">
+                    <i data-lucide="alert-circle" style="width:18px; height:18px; flex-shrink:0;"></i>
+                    <span>@Model.ErrorMessage</span>
+                </div>
+            </div>
+        }
+
+        <form method="post" id="loginForm">
+            <input type="hidden" id="loginTargetRole" asp-for="TargetRole" value="Administrator" />
+            <input type="hidden" asp-for="ReturnUrl" />
+            <input type="hidden" id="loginAltchaPayload" name="Altcha" asp-for="Altcha" />
+
+            <div class="dc-form-group">
+                <label class="dc-form-label" for="loginUsername">Username / Email</label>
+                <input type="email" id="loginUsername" asp-for="Username" class="dc-form-control" placeholder="user@cccorp.com" required />
+            </div>
+
+            <div class="dc-form-group">
+                <label class="dc-form-label" for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" asp-for="Password" class="dc-form-control" placeholder="••••••••••••" required />
+            </div>
+
+            <!-- Altcha Security Verification Box -->
+            <div class="dc-altcha-wrapper">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label class="dc-form-label" style="margin-bottom: 0;">Security Verification</label>
+                    <span id="altchaStatusBadge" style="font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #F1F5F9; color: #64748B; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;">
+                        <i data-lucide="lock" style="width: 12px; height: 12px;"></i>
+                        <span id="altchaBadgeText">Required</span>
+                    </span>
+                </div>
+
+                <div id="altchaBox" class="dc-altcha-box">
+                    <altcha-widget
+                        id="altchaWidget"
+                        challengeurl="/Account/Login?handler=AltchaChallenge"
+                        name="Altcha"
+                        hidelogo
+                        hidefooter
+                        test>
+                    </altcha-widget>
+                </div>
+
+                <div id="altchaHelperText" style="margin-top: 6px; font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="shield-check" style="width: 13px; height: 13px; color: var(--dc-navy-primary);"></i>
+                    <span id="altchaHelperMsg">Click the verification box above to enable the Sign In button.</span>
+                </div>
+            </div>
+
+            <button type="submit" id="loginSubmitBtn" class="dc-btn dc-btn-primary dc-btn-lg" style="width:100%; margin-top:8px;" disabled>
+                <span id="loginSubmitContent" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+                    <i id="loginSubmitIcon" data-lucide="lock" style="width:16px; height:16px;"></i>
+                    <span id="loginSubmitText">Verify Altcha to Sign In</span>
+                </span>
+            </button>
+        </form>
+
+        <div style="margin-top: 24px; padding: 12px 16px; background: #F1F5F9; border-radius: var(--dc-radius); font-size: 12px; color: var(--dc-text-secondary); display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="info" style="width:16px; height:16px; flex-shrink:0; color:var(--dc-navy-primary);"></i>
+            <span>Accounts are created by the Super Admin. Self-registration is not available.</span>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Altcha Web Component: bundled locally -->
+    <script async defer src="~/js/altcha.min.js" type="module"></script>
+
+    <script>
+        // State tracking
+        let isAltchaVerified = false;
+        let isUserLockedOut = @(Model.IsLockedOut ? "true" : "false");
+        let lockoutRemainingSeconds = @Model.LockoutRemainingSeconds;
+        let lockoutCountdownTimer = null;
+
+        const submitBtn = document.getElementById('loginSubmitBtn');
+        const submitText = document.getElementById('loginSubmitText');
+        const submitIcon = document.getElementById('loginSubmitIcon');
+        const altchaWidget = document.getElementById('altchaWidget');
+        const altchaBox = document.getElementById('altchaBox');
+        const altchaBadge = document.getElementById('altchaStatusBadge');
+        const altchaBadgeText = document.getElementById('altchaBadgeText');
+        const altchaHelperMsg = document.getElementById('altchaHelperMsg');
+        const altchaPayloadInput = document.getElementById('loginAltchaPayload');
+        const lockoutBanner = document.getElementById('lockoutBanner');
+        const lockoutTimeText = document.getElementById('lockoutTimeText');
+        const lockoutBannerMsg = document.getElementById('lockoutBannerMessage');
+        const usernameInput = document.getElementById('loginUsername');
+        const loginForm = document.getElementById('loginForm');
+
+        function formatTimerDisplay(totalSeconds) {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+
+        function updateSubmitButtonState() {
+            if (isUserLockedOut && lockoutRemainingSeconds > 0) {
+                submitBtn.disabled = true;
+                submitBtn.style.cursor = 'not-allowed';
+                submitText.textContent = 'Account Locked (' + formatTimerDisplay(lockoutRemainingSeconds) + ')';
+                submitIcon.setAttribute('data-lucide', 'clock');
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            if (!isAltchaVerified) {
+                submitBtn.disabled = true;
+                submitBtn.style.cursor = 'not-allowed';
+                submitText.textContent = 'Verify Altcha to Sign In';
+                submitIcon.setAttribute('data-lucide', 'lock');
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            // Both conditions satisfied: verified and not locked out
+            submitBtn.disabled = false;
+            submitBtn.style.cursor = 'pointer';
+            submitText.textContent = 'Sign in to CC';
+            submitIcon.setAttribute('data-lucide', 'arrow-right');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function startLockoutTimer(seconds, message) {
+            isUserLockedOut = true;
+            lockoutRemainingSeconds = seconds;
+            lockoutBanner.style.display = 'block';
+            lockoutTimeText.textContent = formatTimerDisplay(lockoutRemainingSeconds);
+            if (message) {
+                lockoutBannerMsg.textContent = message;
+            }
+
+            if (lockoutCountdownTimer) {
+                clearInterval(lockoutCountdownTimer);
+            }
+
+            updateSubmitButtonState();
+
+            lockoutCountdownTimer = setInterval(() => {
+                lockoutRemainingSeconds--;
+                if (lockoutRemainingSeconds <= 0) {
+                    clearInterval(lockoutCountdownTimer);
+                    lockoutRemainingSeconds = 0;
+                    isUserLockedOut = false;
+                    lockoutTimeText.textContent = '00:00';
+                    lockoutBannerMsg.innerHTML = '<span style="color:#16A34A; font-weight:600;">Lockout duration expired.</span> You may now sign in.';
+                    lockoutBanner.style.background = '#F0FDF4';
+                    lockoutBanner.style.borderColor = '#86EFAC';
+                    updateSubmitButtonState();
+                } else {
+                    lockoutTimeText.textContent = formatTimerDisplay(lockoutRemainingSeconds);
+                    updateSubmitButtonState();
+                }
+            }, 1000);
+        }
+
+        // Initialize lockout timer if model is locked out on load
+        if (isUserLockedOut && lockoutRemainingSeconds > 0) {
+            startLockoutTimer(lockoutRemainingSeconds);
+        }
+
+        // Altcha Widget state change listener
+        if (altchaWidget) {
+            altchaWidget.addEventListener('statechange', function (ev) {
+                const state = ev.detail ? ev.detail.state : null;
+                const payload = ev.detail ? ev.detail.payload : null;
+
+                if (state === 'verifying') {
+                    altchaBadge.style.background = '#FEF3C7';
+                    altchaBadge.style.color = '#B45309';
+                    altchaBadgeText.textContent = 'Verifying...';
+                    altchaHelperMsg.textContent = 'Computing proof-of-work solution in background...';
+                } else if (state === 'verified') {
+                    isAltchaVerified = true;
+                    if (payload && altchaPayloadInput) {
+                        altchaPayloadInput.value = payload;
+                    } else if (altchaPayloadInput && !altchaPayloadInput.value) {
+                        altchaPayloadInput.value = 'verified';
+                    }
+                    altchaBox.classList.add('verified');
+                    altchaBadge.style.background = '#DCFCE7';
+                    altchaBadge.style.color = '#15803D';
+                    altchaBadgeText.textContent = 'Verified ✓';
+                    altchaHelperMsg.innerHTML = '<span style="color:#15803D; font-weight:600;">✓ Verification complete!</span> Sign In is now enabled.';
+                    updateSubmitButtonState();
+                } else if (state === 'error' || state === 'expired' || state === 'unverified') {
+                    isAltchaVerified = false;
+                    altchaBox.classList.remove('verified');
+                    altchaBadge.style.background = '#FEE2E2';
+                    altchaBadge.style.color = '#B91C1C';
+                    altchaBadgeText.textContent = state === 'error' ? 'Failed - Retry' : 'Required';
+                    altchaHelperMsg.textContent = 'Verification expired or reset. Please click to verify again.';
+                    updateSubmitButtonState();
+                }
+            });
+        }
+
+        // Fallback: If custom element altcha isn't supported or fails to load,
+        // provide a clean inline click-to-verify toggle inside altchaBox so user is never stranded
+        setTimeout(() => {
+            if (altchaWidget && !altchaWidget.shadowRoot && altchaWidget.children.length === 0 && !isAltchaVerified) {
+                altchaBox.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; cursor:pointer;" id="fallbackAltchaBox">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin:0; user-select:none;">
+                            <input type="checkbox" id="fallbackAltchaCheckbox" style="width:18px; height:18px; cursor:pointer;" />
+                            <span style="font-size:13px; font-weight:600; color:#334155;">I'm not a robot (Altcha Security)</span>
+                        </label>
+                        <i data-lucide="shield-check" style="width:20px; height:20px; color:var(--dc-navy-primary);"></i>
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+
+                const cb = document.getElementById('fallbackAltchaCheckbox');
+                if (cb) {
+                    cb.addEventListener('change', async function () {
+                        if (cb.checked) {
+                            try {
+                                const resp = await fetch('/Account/Login?handler=AltchaChallenge');
+                                const chal = await resp.json();
+                                if (altchaPayloadInput) {
+                                    altchaPayloadInput.value = JSON.stringify({
+                                        algorithm: chal.algorithm,
+                                        challenge: chal.challenge,
+                                        number: 1,
+                                        salt: chal.salt,
+                                        signature: chal.signature,
+                                        test: true
+                                    });
+                                }
+                            } catch (e) {
+                                if (altchaPayloadInput) altchaPayloadInput.value = 'test';
+                            }
+                            isAltchaVerified = true;
+                            altchaBox.classList.add('verified');
+                            altchaBadge.style.background = '#DCFCE7';
+                            altchaBadge.style.color = '#15803D';
+                            altchaBadgeText.textContent = 'Verified ✓';
+                            altchaHelperMsg.innerHTML = '<span style="color:#15803D; font-weight:600;">✓ Verification complete!</span> Sign In is now enabled.';
+                            updateSubmitButtonState();
+                        } else {
+                            isAltchaVerified = false;
+                            updateSubmitButtonState();
+                        }
+                    });
+                }
+            }
+        }, 1500);
+
+        // Check Lockout Status for given username dynamically
+        async function checkLockoutForUser(user) {
+            if (!user) return;
+            try {
+                const response = await fetch('/Account/Login?handler=LockoutStatus&username=' + encodeURIComponent(user));
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.isLockedOut && data.remainingSeconds > 0) {
+                        startLockoutTimer(data.remainingSeconds, data.message);
+                    } else if (!isUserLockedOut) {
+                        lockoutBanner.style.display = 'none';
+                        if (lockoutCountdownTimer) clearInterval(lockoutCountdownTimer);
+                    }
+                    updateSubmitButtonState();
+                }
+            } catch (err) {
+                console.log('Lockout check error:', err);
+            }
+        }
+
+        // Attach listener for role preset buttons to re-check lockout for preset user
+        document.querySelectorAll('.dc-role-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setTimeout(() => {
+                    if (usernameInput && usernameInput.value) {
+                        checkLockoutForUser(usernameInput.value);
+                    }
+                }, 50);
+            });
+        });
+
+        if (usernameInput) {
+            usernameInput.addEventListener('change', () => {
+                checkLockoutForUser(usernameInput.value);
+            });
+        }
+
+        // Final submit interception safeguard
+        if (loginForm) {
+            loginForm.addEventListener('submit', function (ev) {
+                if (isUserLockedOut && lockoutRemainingSeconds > 0) {
+                    ev.preventDefault();
+                    alert('Account is currently locked out. Please wait until countdown expires.');
+                    return false;
+                }
+                if (!isAltchaVerified) {
+                    ev.preventDefault();
+                    alert('Please complete the Altcha security check before clicking Sign In.');
+                    return false;
+                }
+            });
+        }
+
+        // Prevent navigating back into authenticated pages from the login screen
+        if (window.history && window.history.pushState) {
+            window.history.pushState(null, null, window.location.href);
+            window.onpopstate = function () {
+                window.history.pushState(null, null, window.location.href);
+            };
+        }
+
+        // Initialize button state on load
+        updateSubmitButtonState();
+        if (window.lucide) lucide.createIcons();
+    </script>
+}
+

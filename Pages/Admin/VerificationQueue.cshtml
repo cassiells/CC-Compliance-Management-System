@@ -1,0 +1,59 @@
+@page
+@model DoComply.Pages.Admin.VerificationQueueModel
+@{
+    ViewData["Title"] = "Verification Queue";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Admin/Dashboard">Administrator</a> / <span>Verification Queue</span>
+        </div>
+        <h1 class="dc-h1">Verification Queue</h1>
+        <p class="dc-body-secondary">Review document submissions from suppliers and record compliance decisions.</p>
+    </div>
+</div>
+
+<div class="dc-table-container" data-dc-table-paginate="queueTable" data-dc-per-page="12">
+    <table class="dc-table" id="queueTable">
+        <thead>
+            <tr>
+                <th>Supplier</th>
+                <th>Document</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th class="dc-table-action-col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Queue)
+            {
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="dc-avatar" style="width:32px; height:32px; font-size:12px;">
+                                @(string.IsNullOrEmpty(item.SupplierName) ? "S" : item.SupplierName.Substring(0, 1))
+                            </div>
+                            <strong>@item.SupplierName</strong>
+                        </div>
+                    </td>
+                    <td>@item.DocumentName</td>
+                    <td class="dc-caption">@item.SubmittedTime</td>
+                    <td>
+                        <span class="dc-status-chip pending-verification">
+                            <span class="dc-status-dot"></span> @item.Status
+                        </span>
+                    </td>
+                    <td class="dc-table-action-col">
+                        <a href="/Admin/DocumentReview?id=@item.Id&supplier=@Uri.EscapeDataString(item.SupplierName)&doc=@Uri.EscapeDataString(item.DocumentName)" 
+                           class="dc-btn dc-btn-primary dc-btn-sm">
+                            Review
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <partial name="_Pagination" model="(Model.Queue.Count, 12, 1)" />
+</div>

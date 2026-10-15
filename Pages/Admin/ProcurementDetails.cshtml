@@ -1,0 +1,166 @@
+@page
+@model DoComply.Pages.Admin.ProcurementDetailsModel
+@{
+    ViewData["Title"] = "Procurement Request #" + Model.Id;
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Admin/Dashboard">Administrator</a> / <a href="/Admin/Procurement">Procurement</a> / <span>Request #@Model.Id</span>
+        </div>
+        <h1 class="dc-h1">@Model.RequestItemTitle Request</h1>
+        <p class="dc-body-secondary">Submitted by @Model.RequestedBy on @Model.DateSubmitted.</p>
+    </div>
+
+    <!-- Prototype State Controls -->
+    <div style="display:flex; align-items:center; gap:8px; background:#FFFFFF; padding:6px; border:1px solid var(--dc-border); border-radius:var(--dc-radius);">
+        <span class="dc-caption" style="font-weight:600; padding:0 8px;">Demo Variant:</span>
+        <button type="button" class="dc-btn @(Model.Compliant ? "dc-btn-primary" : "dc-btn-secondary") dc-btn-sm" onclick="setProcurementVariant(true)">
+            Compliant Supplier Variant
+        </button>
+        <button type="button" class="dc-btn @(!Model.Compliant ? "dc-btn-primary" : "dc-btn-secondary") dc-btn-sm" onclick="setProcurementVariant(false)">
+            Non-Compliant Supplier Variant
+        </button>
+    </div>
+</div>
+
+<!-- Request Approved Confirmation Banner -->
+<div id="requestApprovedBanner" class="dc-card" style="display:none; background:#E6F4EA; border-color:#1F8A4C; padding:16px; margin-bottom:24px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <i data-lucide="check-circle" style="color:#1F8A4C; width:24px; height:24px;"></i>
+        <div>
+            <div style="font-weight:700; font-size:15px; color:#1F8A4C;">Procurement Request Approved</div>
+            <div style="font-size:13px; color:#166534;">The purchase order has been authorized and dispatched to @Model.Supplier.</div>
+        </div>
+    </div>
+</div>
+
+<div class="dc-grid-12">
+    <!-- Left Details Column -->
+    <div class="dc-col-8">
+        <div class="dc-card">
+            <div class="dc-card-header">
+                <h3 class="dc-card-title">Request Summary</h3>
+                <span id="requestStatusChip" class="dc-status-chip @(Model.Status == "Approved" ? "valid" : "pending-verification")">
+                    <span class="dc-status-dot"></span> @Model.Status
+                </span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div>
+                    <div class="dc-caption">Target Supplier</div>
+                    <div id="targetSupplierText" style="font-weight:700; font-size:16px; color:var(--dc-text-primary);">@Model.Supplier</div>
+                </div>
+
+                <div>
+                    <div class="dc-caption">Requested Item / Service</div>
+                    <div style="font-weight:600; color:var(--dc-text-primary);">@Model.RequestItemTitle</div>
+                </div>
+
+                <div>
+                    <div class="dc-caption">Purpose of Procurement</div>
+                    <p style="font-size:14px; color:var(--dc-text-primary); margin-top:4px;">
+                        @Model.Purpose
+                    </p>
+                </div>
+
+                <div style="display:flex; gap:32px; padding-top:12px; border-top:1px solid var(--dc-border);">
+                    <div>
+                        <div class="dc-caption">Estimated Value</div>
+                        <div style="font-weight:700; font-size:16px; color:var(--dc-navy-primary);">₱45,800.00</div>
+                    </div>
+                    <div>
+                        <div class="dc-caption">Department</div>
+                        <div style="font-weight:600;">Human Resources</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Supplier Compliance Evaluation Panel -->
+    <div class="dc-col-4">
+        <div class="dc-card">
+            <div class="dc-card-header">
+                <h3 class="dc-card-title">Supplier Compliance</h3>
+                <i data-lucide="shield-check" style="color:var(--dc-navy-primary);"></i>
+            </div>
+
+            <div id="supplierCompliancePanelContent">
+                @if (Model.Compliant)
+                {
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        <div class="dc-compliance-badge-wrapper">
+                            <div class="dc-compliance-badge compliant">
+                                <span class="dc-status-dot"></span> COMPLIANT
+                            </div>
+                            <div class="dc-compliance-reasons">All required compliance documents verified & valid.</div>
+                        </div>
+
+                        <div style="padding:12px; background:#E6F4EA; border-radius:var(--dc-radius); font-size:13px; color:#166534;">
+                            ✓ Supplier meets all regulatory requirements. Safe for procurement approval.
+                        </div>
+
+                        @if (Model.Status != "Approved")
+                        {
+                            <form method="post" asp-page-handler="Approve">
+                                <input type="hidden" name="requestId" value="@Model.Id" />
+                                <button type="submit" id="approveProcurementBtn" class="dc-btn dc-btn-approve dc-btn-lg" style="width:100%;">
+                                    <i data-lucide="check-circle"></i> Approve Request
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <div style="padding:12px; background:#E6F4EA; border-radius:var(--dc-radius); font-size:13px; font-weight:700; color:#1F8A4C; text-align:center;">
+                                ✓ Request has been Approved
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        <div class="dc-compliance-badge-wrapper">
+                            <div class="dc-compliance-badge not-compliant">
+                                <span class="dc-status-dot"></span> NOT COMPLIANT
+                            </div>
+                            <div class="dc-compliance-reasons">Supplier has expired compliance documents.</div>
+                        </div>
+
+                        <!-- Compliance Warning Banner Replacing Approve Button -->
+                        <div class="dc-card" style="background:#FDE7E7; border-color:#FCA5A5; padding:16px;">
+                            <div style="display:flex; align-items:flex-start; gap:10px;">
+                                <i data-lucide="triangle-alert" style="color:var(--dc-red-reject); width:20px; height:20px; flex-shrink:0; margin-top:2px;"></i>
+                                <div>
+                                    <div style="font-weight:700; color:var(--dc-red-reject); font-size:14px;">Approval Blocked</div>
+                                    <div style="font-size:12px; color:#991B1B; margin-top:2px;">
+                                        Supplier has expired compliance documents. Procurement requests cannot be approved until expired documents are renewed and verified.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function setProcurementVariant(isCompliant) {
+            const supplier = isCompliant ? 'ABC Office Supplies' : 'XYZ Training Services';
+            window.location.href = `/Admin/ProcurementDetails?id=@Model.Id&compliant=${isCompliant}&supplier=${encodeURIComponent(supplier)}&request=@Uri.EscapeDataString(Model.RequestItemTitle)`;
+        }
+
+        function approveProcurementRequest() {
+            document.getElementById('requestApprovedBanner').style.display = 'block';
+            document.getElementById('requestStatusChip').className = 'dc-status-chip valid';
+            document.getElementById('requestStatusChip').innerHTML = '<span class="dc-status-dot"></span> Approved';
+            document.getElementById('approveProcurementBtn').disabled = true;
+            showToast('Procurement Request Approved successfully.');
+        }
+    </script>
+}

@@ -1,0 +1,336 @@
+@page
+@model DoComply.Pages.Supplier.MyComplianceModel
+@{
+    ViewData["Title"] = "My Compliance Obligations";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Supplier/MyCompliance">Supplier Portal</a> / <span>My Compliance</span>
+        </div>
+        <h1 class="dc-h1">MY COMPLIANCE</h1>
+        <p class="dc-body-secondary">@Model.CompanyName compliance checklist and document submission portal.</p>
+    </div>
+
+    <!-- Interactive Prototype State Preset Buttons -->
+    <div style="display:flex; align-items:center; gap:6px; background:#FFFFFF; padding:6px; border:1px solid var(--dc-border); border-radius:var(--dc-radius); flex-wrap:wrap;">
+        <span class="dc-caption" style="font-weight:600; padding:0 6px;">Demo Flow Presets:</span>
+        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" data-dc-supplier-preset="all-missing">
+            1. All Missing (Initial)
+        </button>
+        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" data-dc-supplier-preset="one-rejected">
+            2. Safety Cert Rejected
+        </button>
+        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" data-dc-supplier-preset="all-valid">
+            3. All Valid (COMPLIANT)
+        </button>
+    </div>
+</div>
+
+<!-- Header Overall Compliance Position Card -->
+<div class="dc-card" style="margin-bottom: 24px; padding: 24px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+        <div>
+            <div style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--dc-text-secondary); margin-bottom:4px;">
+                Overall Supplier Compliance Standing
+            </div>
+            <div id="supplierOverallBadgeContainer">
+                <partial name="_ComplianceBadge" model="(Model.OverallStatus, Model.Reasons)" />
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; background:#FFF4DB; border:1px solid #FDE68A; padding:12px 16px; border-radius:var(--dc-radius); max-width:440px;">
+            <i data-lucide="info" style="color:#B26A00; width:20px; height:20px; flex-shrink:0;"></i>
+            <div style="font-size:12px; color:#B26A00;">
+                <strong>Upload Notice:</strong> Uploading a document changes its status to Pending Verification. An Administrator must review and approve it before it becomes Valid.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Compliance Table -->
+<div class="dc-card">
+    <div class="dc-card-header">
+        <h3 class="dc-card-title">Required Compliance Documents</h3>
+        <span class="dc-caption">5 Standard Obligations</span>
+    </div>
+
+    <div class="dc-table-container">
+        <table class="dc-table" id="supplierMyComplianceTable">
+            <thead>
+                <tr>
+                    <th>Requirement</th>
+                    <th>Outcome</th>
+                    <th>Expiry</th>
+                    <th>Status</th>
+                    <th class="dc-table-action-col">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.ChecklistItems.Any())
+                {
+                    @foreach (var item in Model.ChecklistItems)
+                    {
+                        <tr data-doc-row="@item.RequirementName">
+                            <td><strong>@item.RequirementName</strong></td>
+                            <td>
+                                @if (item.IsSubmitted == true)
+                                {
+                                    <span class="dc-caption" style="color:#1F8A4C; font-weight:600;">✓ Submitted</span>
+                                }
+                                else
+                                {
+                                    <span class="dc-caption" style="color:#C62828; font-weight:600;">✗ Not Submitted</span>
+                                }
+                            </td>
+                            <td class="dc-expiry-cell">
+                                @(item.ExpiryDate.HasValue ? item.ExpiryDate.Value.ToString("MMM dd, yyyy") : (item.ExpiryRequired ? "—" : "No expiry"))
+                            </td>
+                            <td class="dc-status-cell">
+                                <partial name="_StatusChip" model='@(item.EffectiveStatus ?? "Missing")' />
+                            </td>
+                            <td class="dc-action-cell">
+                                <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="openUploadModal('@item.RequirementName')">
+                                    @(item.IsSubmitted == true ? "Re-upload" : "Upload")
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <!-- Fallback prototype rows -->
+                    <tr data-doc-row="Business Permit">
+                        <td><strong>Business Permit</strong></td>
+                        <td><span class="dc-caption" style="color:#C62828;">✗ Not Submitted</span></td>
+                        <td class="dc-expiry-cell">—</td>
+                        <td class="dc-status-cell"><span class="dc-status-chip missing"><span class="dc-status-dot"></span> Missing</span></td>
+                        <td class="dc-action-cell"><button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="openUploadModal('Business Permit')">Upload</button></td>
+                    </tr>
+                    <tr data-doc-row="BIR Registration">
+                        <td><strong>BIR Registration</strong></td>
+                        <td><span class="dc-caption" style="color:#C62828;">✗ Not Submitted</span></td>
+                        <td class="dc-expiry-cell">No expiry</td>
+                        <td class="dc-status-cell"><span class="dc-status-chip missing"><span class="dc-status-dot"></span> Missing</span></td>
+                        <td class="dc-action-cell"><button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="openUploadModal('BIR Registration')">Upload</button></td>
+                    </tr>
+                    <tr data-doc-row="Tax Clearance">
+                        <td><strong>Tax Clearance</strong></td>
+                        <td><span class="dc-caption" style="color:#C62828;">✗ Not Submitted</span></td>
+                        <td class="dc-expiry-cell">—</td>
+                        <td class="dc-status-cell"><span class="dc-status-chip missing"><span class="dc-status-dot"></span> Missing</span></td>
+                        <td class="dc-action-cell"><button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="openUploadModal('Tax Clearance')">Upload</button></td>
+                    </tr>
+                    <tr data-doc-row="Safety Certificate">
+                        <td><strong>Safety Certificate</strong></td>
+                        <td><span class="dc-caption" style="color:#C62828;">✗ Not Submitted</span></td>
+                        <td class="dc-expiry-cell">—</td>
+                        <td class="dc-status-cell"><span class="dc-status-chip missing"><span class="dc-status-dot"></span> Missing</span></td>
+                        <td class="dc-action-cell"><button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="openUploadModal('Safety Certificate')">Upload</button></td>
+                    </tr>
+                    <tr data-doc-row="Data Privacy Agreement">
+                        <td><strong>Data Privacy Agreement</strong></td>
+                        <td><span class="dc-caption" style="color:#C62828;">✗ Not Submitted</span></td>
+                        <td class="dc-expiry-cell">No expiry</td>
+                        <td class="dc-status-cell"><span class="dc-status-chip missing"><span class="dc-status-dot"></span> Missing</span></td>
+                        <td class="dc-action-cell"><button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="openUploadModal('Data Privacy Agreement')">Upload</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Upload Document Modal -->
+<div id="supplierUploadModal" class="dc-modal-backdrop">
+    <div class="dc-modal-surface">
+        <div class="dc-modal-header">
+            <h3 class="dc-modal-title">Upload Compliance Document</h3>
+            <button type="button" class="dc-modal-close" data-dc-modal-dismiss="supplierUploadModal">
+                <i data-lucide="x" style="width:18px; height:18px;"></i>
+            </button>
+        </div>
+        <form id="supplierUploadForm" method="post" asp-page-handler="Upload" enctype="multipart/form-data">
+            <div class="dc-modal-body">
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="uploadDocNameSelect">Selected Document Requirement</label>
+                    <select id="uploadDocNameSelect" name="requirementName" class="dc-form-control" required onchange="updateModalFileHint()">
+                        <option value="Business Permit">Business Permit</option>
+                        <option value="BIR Registration">BIR Registration</option>
+                        <option value="Tax Clearance">Tax Clearance</option>
+                        <option value="Safety Certificate">Safety Certificate</option>
+                        <option value="Data Privacy Agreement">Data Privacy Agreement</option>
+                    </select>
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="uploadDocExpiryDate">Document Expiry Date</label>
+                    <input type="date" id="uploadDocExpiryDate" name="expiryDate" class="dc-form-control" value="2026-12-31" />
+                    <span class="dc-form-helper">Leave empty if requirement does not expire.</span>
+                </div>
+
+                <!-- Functional File Drop / Attach Area -->
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="modalFileInput">Attach File</label>
+                    
+                    <div id="modalDropZone" class="dc-dropzone" style="padding:24px;">
+                        <!-- Native File Input overlaying the modal drop zone -->
+                        <input type="file"
+                               id="modalFileInput"
+                               name="documentFile"
+                               class="dc-dropzone-input"
+                               accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                               title="Click or drop file here" />
+
+                        <!-- Prompt State -->
+                        <div id="modalPromptState" style="display:flex; flex-direction:column; align-items:center; gap:6px; pointer-events:none;">
+                            <div style="width:40px; height:40px; border-radius:50%; background:#EBF2FA; display:flex; align-items:center; justify-content:center; color:var(--dc-navy-primary);">
+                                <i data-lucide="upload-cloud" style="width:22px; height:22px;"></i>
+                            </div>
+                            <div style="font-size:14px; font-weight:700; color:var(--dc-navy-primary);">
+                                Click to browse or drag &amp; drop file
+                            </div>
+                            <span id="modalFileHint" class="dc-caption" style="color:var(--dc-navy-active); font-weight:600;">Default: ABC_ComplianceDocument.pdf</span>
+                            <span class="dc-caption" style="color:var(--dc-text-secondary);">PDF, DOCX, PNG up to 10 MB</span>
+                        </div>
+
+                        <!-- Attached State -->
+                        <div id="modalAttachedState" style="display:none; width:100%; z-index:10; position:relative;">
+                            <div style="background:#FFFFFF; border:1px solid #93C5FD; border-radius:8px; padding:10px 14px; display:flex; align-items:center; gap:10px; text-align:left;">
+                                <i data-lucide="file-check" style="width:20px; height:20px; color:#1F8A4C; flex-shrink:0;"></i>
+                                <div style="flex:1; min-width:0;">
+                                    <div id="modalAttachedFileName" style="font-size:13px; font-weight:700; color:var(--dc-text-primary); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                                        MyDocument.pdf
+                                    </div>
+                                    <div style="font-size:11px; color:#1F8A4C; font-weight:600;">Ready to upload</div>
+                                </div>
+                                <button type="button" id="btnModalRemoveFile" class="dc-btn dc-btn-sm" style="padding:4px 8px; background:#FEE2E2; color:#DC2626; cursor:pointer;" title="Remove file">
+                                    <i data-lucide="x" style="width:14px; height:14px;"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Error State -->
+                        <div id="modalErrorState" style="display:none; color:#DC2626; font-size:12px; font-weight:600; z-index:10; position:relative;">
+                            File exceeds 10 MB limit.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Callout Box -->
+                <div class="dc-card" style="background:#FFF4DB; border-color:#FDE68A; padding:12px; margin-top:12px;">
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                        <i data-lucide="triangle-alert" style="color:#B26A00; width:18px; height:18px; flex-shrink:0; margin-top:2px;"></i>
+                        <div style="font-size:12px; color:#B26A00;">
+                            <strong>Uploading does not make a document valid.</strong> Its status will be Pending Verification until an Administrator approves it.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dc-modal-footer">
+                <button type="button" class="dc-btn dc-btn-secondary" data-dc-modal-dismiss="supplierUploadModal">Cancel</button>
+                <button type="submit" class="dc-btn dc-btn-primary">Submit for Verification</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function() {
+            function updateModalFileHint() {
+                const sel = document.getElementById('uploadDocNameSelect');
+                const hint = document.getElementById('modalFileHint');
+                if (sel && hint) {
+                    const clean = sel.value.replace(/\s+/g, '');
+                    hint.textContent = `Default: ABC_${clean}_2026.pdf`;
+                }
+            }
+            window.updateModalFileHint = updateModalFileHint;
+
+            function initModalDropzone() {
+                const dropZone = document.getElementById('modalDropZone');
+                const fileInput = document.getElementById('modalFileInput');
+                const promptState = document.getElementById('modalPromptState');
+                const attachedState = document.getElementById('modalAttachedState');
+                const errorState = document.getElementById('modalErrorState');
+                const fileNameEl = document.getElementById('modalAttachedFileName');
+                const btnRemove = document.getElementById('btnModalRemoveFile');
+
+                if (!dropZone || !fileInput) return;
+
+                if (btnRemove) {
+                    btnRemove.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        fileInput.value = '';
+                        fileInput.classList.remove('attached');
+                        if (promptState) promptState.style.display = 'flex';
+                        if (attachedState) attachedState.style.display = 'none';
+                        if (errorState) errorState.style.display = 'none';
+                        if (window.lucide) window.lucide.createIcons();
+                    });
+                }
+
+                fileInput.addEventListener('change', function() {
+                    if (fileInput.files && fileInput.files.length > 0) {
+                        handleModalFile(fileInput.files[0]);
+                    }
+                });
+
+                ['dragenter', 'dragover'].forEach(function(ev) {
+                    dropZone.addEventListener(ev, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropZone.classList.add('dragover');
+                    });
+                });
+
+                ['dragleave', 'drop'].forEach(function(ev) {
+                    dropZone.addEventListener(ev, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropZone.classList.remove('dragover');
+                    });
+                });
+
+                dropZone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.remove('dragover');
+                    const dt = e.dataTransfer;
+                    if (dt && dt.files && dt.files.length > 0) {
+                        fileInput.files = dt.files;
+                        handleModalFile(dt.files[0]);
+                    }
+                });
+
+                function handleModalFile(file) {
+                    if (file.size > 10 * 1024 * 1024) {
+                        if (errorState) errorState.style.display = 'block';
+                        fileInput.value = '';
+                        fileInput.classList.remove('attached');
+                        if (promptState) promptState.style.display = 'flex';
+                        if (attachedState) attachedState.style.display = 'none';
+                        return;
+                    }
+                    if (errorState) errorState.style.display = 'none';
+                    if (fileNameEl) fileNameEl.textContent = file.name;
+                    if (promptState) promptState.style.display = 'none';
+                    if (attachedState) attachedState.style.display = 'block';
+                    fileInput.classList.add('attached');
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    initModalDropzone();
+                });
+            } else {
+                initModalDropzone();
+            }
+        })();
+    </script>
+}

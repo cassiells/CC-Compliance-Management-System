@@ -1,0 +1,156 @@
+@inject DoComply.Models.DoComplyContext DbContext
+@{
+    string path = Context.Request.Path.Value ?? "";
+    string? sessionName = Context.Session.GetString("FullName");
+    string? sessionRole = Context.Session.GetString("RoleName");
+    string? sessionUserId = Context.Session.GetString("UserId");
+
+    string role = "Admin";
+    if (path.StartsWith("/SuperAdmin", StringComparison.OrdinalIgnoreCase)) role = "SuperAdmin";
+    else if (path.StartsWith("/Staff", StringComparison.OrdinalIgnoreCase)) role = "Staff";
+    else if (path.StartsWith("/Supplier", StringComparison.OrdinalIgnoreCase)) role = "Supplier";
+    else if (path.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase)) role = "Admin";
+    else if (!string.IsNullOrEmpty(sessionRole))
+    {
+        if (sessionRole.Contains("Supplier", StringComparison.OrdinalIgnoreCase)) role = "Supplier";
+        else if (sessionRole.Contains("Staff", StringComparison.OrdinalIgnoreCase)) role = "Staff";
+        else if (sessionRole.Contains("Super", StringComparison.OrdinalIgnoreCase)) role = "SuperAdmin";
+        else role = "Admin";
+    }
+
+    string userName = !string.IsNullOrEmpty(sessionName) ? sessionName : "Juan Dela Cruz";
+    string userRole = !string.IsNullOrEmpty(sessionRole) ? sessionRole : "Administrator";
+
+    if (string.IsNullOrEmpty(sessionName))
+    {
+        if (role == "SuperAdmin")
+        {
+            userName = "Elena Rostova";
+            userRole = "Super Admin";
+        }
+        else if (role == "Staff")
+        {
+            userName = "Leah Ramos";
+            userRole = "Staff / HR";
+        }
+        else if (role == "Supplier")
+        {
+            userName = "ABC Training Services";
+            userRole = "Supplier Partner";
+        }
+        else
+        {
+            userName = "Juan Dela Cruz";
+            userRole = "Administrator";
+        }
+    }
+
+    string userInitials = string.Join("", userName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(s => s[0])).ToUpper();
+    if (userInitials.Length > 2) userInitials = userInitials.Substring(0, 2);
+    if (string.IsNullOrEmpty(userInitials)) userInitials = "DC";
+
+    long currentUserId = 0;
+    long? currentSupId = null;
+    if (!string.IsNullOrEmpty(sessionUserId) && long.TryParse(sessionUserId, out var uid))
+    {
+        currentUserId = uid;
+    }
+    else
+    {
+        var matched = role switch
+        {
+            "Supplier" => DbContext.Users.FirstOrDefault(u => u.RoleId == 4),
+            "Staff" => DbContext.Users.FirstOrDefault(u => u.RoleId == 3),
+            "SuperAdmin" => DbContext.Users.FirstOrDefault(u => u.RoleId == 1),
+            _ => DbContext.Users.FirstOrDefault(u => u.RoleId == 2)
+        };
+        currentUserId = matched?.UserId ?? (role == "Supplier" ? 4 : 2);
+    }
+
+    if (role == "Supplier")
+    {
+        var sup = DbContext.Suppliers.FirstOrDefault(s => 
+            s.CreatedByUserId == currentUserId || 
+            (sessionName != null && s.SupplierName.Contains(sessionName)) ||
+            s.SupplierName == "ABC Office Supplies");
+        currentSupId = sup?.SupplierId ?? 1;
+    }
+
+    int unreadBellCount = 0;
+    try
+    {
+        unreadBellCount = DbContext.Notifications.Count(n => n.UserId == currentUserId && !n.IsRead);
+    }
+    catch
+    {
+        unreadBellCount = 0;
+    }
+
+    string notifBellUrl = role switch
+    {
+        "Supplier" => "/Supplier/Notifications",
+        "Staff" => "/Staff/Notifications",
+        "SuperAdmin" => "/SuperAdmin/Notifications",
+        _ => "/Admin/Notifications"
+    };
+
+    string searchPlaceholder = role switch
+    {
+        "SuperAdmin" => "Search users, roles, audit log, settings…",
+        "Staff" => "Search suppliers, requests, reports…",
+        "Supplier" => "Search compliance standing, documents…",
+        _ => "Search suppliers, requirements, verifications, reports…"
+    };
+
+    string rolePortalName = role switch
+    {
+        "SuperAdmin" => "Super Administrator",
+        "Staff" => "Staff / HR",
+        "Supplier" => "Supplier Partner",
+        _ => "Administrator"
+    };
+}
+
+<header class="dc-topbar">
+    <div style="display:flex; align-items:center;">
+        <button type="button" class="dc-mobile-menu-toggle" onclick="document.getElementById('dcSidebar').classList.toggle('open')">
+            <i data-lucide="menu"></i>
+        </button>
+
+        <!-- Global Search Component (Role-Scoped) -->
+        <div class="dc-global-search" data-current-role="@role" data-role-portal="@rolePortalName">
+            <div class="dc-search-input-wrapper">
+                <i data-lucide="search" class="dc-search-icon" style="width:18px; height:18px;"></i>
+                <input type="text" id="globalSearchInput" class="dc-search-input" placeholder="@searchPlaceholder" autocomplete="off" />
+                <button type="button" id="globalSearchClear" class="dc-search-clear">
+                    <i data-lucide="x" style="width:14px; height:14px;"></i>
+                </button>
+            </div>
+            <!-- Global Search Dropdown -->
+            <div id="globalSearchDropdown" class="dc-search-dropdown"></div>
+        </div>
+    </div>
+
+    <div class="dc-topbar-actions">
+        <!-- Notification Bell -->
+        <div class="dc-notification-bell-wrapper">
+            <a href="@notifBellUrl" class="dc-topbar-icon-btn" title="View Notifications">
+                <i data-lucide="bell" style="width:20px; height:20px;"></i>
+                @if (unreadBellCount > 0)
+                {
+                    <span class="dc-bell-badge">@unreadBellCount</span>
+                }
+            </a>
+        </div>
+
+        <!-- User Profile Dropdown / Card -->
+        <div class="dc-user-profile-menu" data-dc-modal-target="confirmSignoutModal" title="Click to Sign Out">
+            <div class="dc-avatar">@userInitials</div>
+            <div class="dc-user-details">
+                <span class="dc-user-name">@userName</span>
+                <span class="dc-user-role">@userRole</span>
+            </div>
+            <i data-lucide="chevron-down" style="width:16px; height:16px; color:var(--dc-text-secondary); margin-left:4px;"></i>
+        </div>
+    </div>
+</header>

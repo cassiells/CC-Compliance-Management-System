@@ -1,0 +1,332 @@
+@page
+@model DoComply.Pages.Staff.MyRequestsModel
+@{
+    ViewData["Title"] = "My Department Requests";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Staff/Suppliers">Staff</a> / <span>My Requests</span>
+        </div>
+        <h1 class="dc-h1">My Procurement Requests</h1>
+        <p class="dc-body-secondary">Track purchase requests submitted by your department.</p>
+    </div>
+
+    <div>
+        <a href="/Staff/NewRequest" class="dc-btn dc-btn-primary">
+            <i data-lucide="plus-circle"></i> New Request
+        </a>
+    </div>
+</div>
+
+<div class="dc-table-container" data-dc-table-paginate="myReqTable" data-dc-per-page="12">
+    <table class="dc-table" id="myReqTable">
+        <thead>
+            <tr>
+                <th>Request</th>
+                <th>Supplier</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th class="dc-table-action-col">View</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var req in Model.Requests)
+            {
+                <tr>
+                    <td><strong>@req.RequestName</strong></td>
+                    <td>@req.SupplierName</td>
+                    <td class="dc-caption">@req.DateSubmitted</td>
+                    <td>
+                        <span class="dc-status-chip @(req.Status == "Approved" ? "valid" : "pending-verification")">
+                            <span class="dc-status-dot"></span> @req.Status
+                        </span>
+                    </td>
+                    <td class="dc-table-action-col">
+                        <button type="button" 
+                                class="dc-btn dc-btn-secondary dc-btn-sm btn-view-request"
+                                data-id="@req.Id"
+                                data-request-name="@req.RequestName"
+                                data-supplier-name="@req.SupplierName"
+                                data-requested-by="@req.RequestedBy"
+                                data-purpose="@(!string.IsNullOrEmpty(req.Purpose) ? req.Purpose : "Procurement of departmental materials and services according to operational requirements.")"
+                                data-date-submitted="@req.DateSubmitted"
+                                data-status="@req.Status"
+                                data-compliant="@(req.IsSupplierCompliant ? "true" : "false")">
+                            View
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <partial name="_Pagination" model="(Model.Requests.Count, 12, 1)" />
+</div>
+
+<!-- Procurement Request Details Modal -->
+<div id="requestDetailsModal" class="dc-modal-backdrop">
+    <div class="dc-modal-surface" style="max-width: 620px;">
+        <div class="dc-modal-header">
+            <div>
+                <h3 class="dc-modal-title" id="modalReqHeaderTitle">Procurement Request Details</h3>
+                <span class="dc-caption" id="modalReqHeaderSub" style="color:var(--dc-text-secondary);">Requisition Details & Approval Pipeline</span>
+            </div>
+            <button type="button" class="dc-modal-close" data-dc-modal-dismiss="requestDetailsModal" title="Close Modal">
+                <i data-lucide="x" style="width:18px; height:18px;"></i>
+            </button>
+        </div>
+        <div class="dc-modal-body" style="display:flex; flex-direction:column; gap:20px;">
+            <!-- Top Hero Card -->
+            <div style="background:#F8FAFC; border:1px solid var(--dc-border); border-radius:var(--dc-radius); padding:18px; display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+                <div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                        <span id="modalReqIdBadge" class="dc-caption" style="font-weight:700; background:#E2E8F0; padding:2px 8px; border-radius:4px; color:var(--dc-navy-primary);">#PR-1024</span>
+                        <span id="modalReqStatusChip" class="dc-status-chip pending-verification">
+                            <span class="dc-status-dot"></span> <span id="modalReqStatusText">Pending Approval</span>
+                        </span>
+                    </div>
+                    <h2 id="modalReqTitle" style="font-size:18px; font-weight:700; color:var(--dc-text-primary); margin:0;">Office Supplies</h2>
+                    <div class="dc-caption" style="margin-top:4px; color:var(--dc-text-secondary);">
+                        Submitted on <span id="modalReqDate" style="font-weight:600; color:var(--dc-text-primary);">Oct 12, 2026</span>
+                    </div>
+                </div>
+
+                <div style="text-align:right;">
+                    <div class="dc-caption" style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em;">Department</div>
+                    <div style="font-weight:600; font-size:13px; color:var(--dc-text-primary);">Human Resources</div>
+                    <div class="dc-caption" id="modalReqRequester" style="color:var(--dc-text-secondary); font-size:12px;">Leah Ramos (Staff)</div>
+                </div>
+            </div>
+
+            <!-- Details Grid -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                <!-- Target Supplier -->
+                <div style="background:#FFFFFF; border:1px solid var(--dc-border); border-radius:var(--dc-radius); padding:14px;">
+                    <div class="dc-caption" style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--dc-text-secondary); margin-bottom:4px;">
+                        Target Supplier
+                    </div>
+                    <div id="modalReqSupplier" style="font-size:15px; font-weight:700; color:var(--dc-text-primary); margin-bottom:6px;">
+                        ABC Office Supplies
+                    </div>
+                    <a id="modalReqSupplierLink" href="#" class="dc-caption" style="color:var(--dc-navy-primary); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                        <span>View Supplier Profile</span>
+                        <i data-lucide="external-link" style="width:12px; height:12px;"></i>
+                    </a>
+                </div>
+
+                <!-- Supplier Compliance Standing -->
+                <div style="background:#FFFFFF; border:1px solid var(--dc-border); border-radius:var(--dc-radius); padding:14px;">
+                    <div class="dc-caption" style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--dc-text-secondary); margin-bottom:4px;">
+                        Compliance Standing
+                    </div>
+                    <div id="modalReqCompBadge" class="dc-compliance-badge compliant" style="margin-bottom:6px; display:inline-flex;">
+                        <span class="dc-status-dot"></span> <span id="modalReqCompBadgeText">COMPLIANT</span>
+                    </div>
+                    <div id="modalReqCompText" class="dc-caption" style="color:var(--dc-text-secondary); font-size:12px; line-height:1.3;">
+                        All required compliance documents verified & valid.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Purpose / Justification Box -->
+            <div style="background:#FFFFFF; border:1px solid var(--dc-border); border-radius:var(--dc-radius); padding:14px;">
+                <div class="dc-caption" style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--dc-text-secondary); margin-bottom:6px;">
+                    Purpose of Procurement
+                </div>
+                <p id="modalReqPurpose" style="font-size:13px; color:var(--dc-text-primary); line-height:1.5; margin:0; background:#F8FAFC; padding:10px 12px; border-radius:6px; border:1px solid #E2E8F0;">
+                    Procurement of departmental materials and services according to operational requirements.
+                </p>
+            </div>
+
+            <!-- Pipeline Progress / Approval Tracking -->
+            <div style="background:#FFFFFF; border:1px solid var(--dc-border); border-radius:var(--dc-radius); padding:16px;">
+                <div class="dc-caption" style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--dc-text-secondary); margin-bottom:12px;">
+                    Approval Pipeline
+                </div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <!-- Step 1 -->
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:28px; height:28px; border-radius:50%; background:#DCFCE7; color:#15803D; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i data-lucide="check" style="width:16px; height:16px;"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:13px; font-weight:600; color:var(--dc-text-primary);">1. Department Request Submitted</div>
+                            <div class="dc-caption" style="color:var(--dc-text-secondary);">Requisition logged by department staff</div>
+                        </div>
+                        <span class="dc-caption" style="font-weight:600; color:#15803D;">Completed</span>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div id="modalStep2IconWrapper" style="width:28px; height:28px; border-radius:50%; background:#DCFCE7; color:#15803D; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i id="modalStep2Icon" data-lucide="shield-check" style="width:16px; height:16px;"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:13px; font-weight:600; color:var(--dc-text-primary);">2. Supplier Compliance Verification</div>
+                            <div id="modalStep2Sub" class="dc-caption" style="color:var(--dc-text-secondary);">Verified against CC compliance engine</div>
+                        </div>
+                        <span id="modalStep2Status" class="dc-caption" style="font-weight:600; color:#15803D;">Verified</span>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div id="modalStep3IconWrapper" style="width:28px; height:28px; border-radius:50%; background:#FEF3C7; color:#B45309; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i id="modalStep3Icon" data-lucide="clock" style="width:16px; height:16px;"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:13px; font-weight:600; color:var(--dc-text-primary);">3. Compliance Administrator Approval</div>
+                            <div id="modalStep3Sub" class="dc-caption" style="color:var(--dc-text-secondary);">Review by Administrator in procurement queue</div>
+                        </div>
+                        <span id="modalStep3Status" class="dc-caption" style="font-weight:600; color:#B45309;">Pending Review</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="dc-modal-footer">
+            <button type="button" class="dc-btn dc-btn-secondary" data-dc-modal-dismiss="requestDetailsModal">
+                Close
+            </button>
+            <a id="modalReqSupplierProfileBtn" href="#" class="dc-btn dc-btn-primary">
+                <i data-lucide="building-2" style="width:16px; height:16px;"></i>
+                <span>View Supplier Profile</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function escapeHtml(str) {
+            return (str || '').replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag));
+        }
+
+        function openViewRequestModal(data) {
+            document.getElementById('modalReqHeaderTitle').textContent = data.requestName ? `Request: ${data.requestName}` : 'Procurement Request Details';
+            document.getElementById('modalReqTitle').textContent = data.requestName || 'Procurement Request';
+            document.getElementById('modalReqIdBadge').textContent = data.id ? `#PR-${String(data.id).padStart(4, '0')}` : '#PR-1024';
+            document.getElementById('modalReqDate').textContent = data.dateSubmitted || 'Recently Submitted';
+            document.getElementById('modalReqSupplier').textContent = data.supplierName || 'N/A';
+            document.getElementById('modalReqRequester').textContent = data.requestedBy || 'Leah Ramos (Staff / HR)';
+            document.getElementById('modalReqPurpose').textContent = data.purpose || 'Procurement of departmental materials and services according to operational requirements.';
+
+            const supUrl = `/Staff/SupplierDetails?name=${encodeURIComponent(data.supplierName || '')}`;
+            document.getElementById('modalReqSupplierLink').href = supUrl;
+            document.getElementById('modalReqSupplierProfileBtn').href = supUrl;
+
+            const isApproved = (data.status || '').toLowerCase() === 'approved';
+            const statusChip = document.getElementById('modalReqStatusChip');
+            statusChip.className = `dc-status-chip ${isApproved ? 'valid' : 'pending-verification'}`;
+            document.getElementById('modalReqStatusText').textContent = data.status || 'Pending Approval';
+
+            // Compliance standing
+            const isCompliant = data.isSupplierCompliant === true || data.isSupplierCompliant === 'true';
+            const compBadge = document.getElementById('modalReqCompBadge');
+            const compBadgeText = document.getElementById('modalReqCompBadgeText');
+            const compText = document.getElementById('modalReqCompText');
+            const step2IconWrapper = document.getElementById('modalStep2IconWrapper');
+            const step2Status = document.getElementById('modalStep2Status');
+
+            if (isCompliant) {
+                compBadge.className = 'dc-compliance-badge compliant';
+                compBadgeText.textContent = 'COMPLIANT';
+                compText.textContent = 'All required compliance documents verified & valid.';
+                step2IconWrapper.style.background = '#DCFCE7';
+                step2IconWrapper.style.color = '#15803D';
+                step2Status.textContent = 'Verified';
+                step2Status.style.color = '#15803D';
+            } else {
+                compBadge.className = 'dc-compliance-badge non-compliant';
+                compBadgeText.textContent = 'NOT COMPLIANT';
+                compText.textContent = 'Supplier has missing or expired credentials requiring verification.';
+                step2IconWrapper.style.background = '#FEE2E2';
+                step2IconWrapper.style.color = '#DC2626';
+                step2Status.textContent = 'Attention Needed';
+                step2Status.style.color = '#DC2626';
+            }
+
+            // Step 3 Admin status
+            const step3IconWrapper = document.getElementById('modalStep3IconWrapper');
+            const step3Status = document.getElementById('modalStep3Status');
+            const step3Sub = document.getElementById('modalStep3Sub');
+            if (isApproved) {
+                step3IconWrapper.style.background = '#DCFCE7';
+                step3IconWrapper.style.color = '#15803D';
+                step3Status.textContent = 'Approved';
+                step3Status.style.color = '#15803D';
+                step3Sub.textContent = 'Authorized and approved by Compliance Administrator.';
+            } else {
+                step3IconWrapper.style.background = '#FEF3C7';
+                step3IconWrapper.style.color = '#B45309';
+                step3Status.textContent = 'Pending Review';
+                step3Status.style.color = '#B45309';
+                step3Sub.textContent = 'Review by Administrator in procurement queue.';
+            }
+
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+
+            openDcModal('requestDetailsModal');
+        }
+
+        // Click delegation for all View buttons
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-view-request');
+            if (!btn) return;
+            e.preventDefault();
+
+            const data = {
+                id: btn.dataset.id,
+                requestName: btn.dataset.requestName,
+                supplierName: btn.dataset.supplierName,
+                requestedBy: btn.dataset.requestedBy,
+                purpose: btn.dataset.purpose,
+                dateSubmitted: btn.dataset.dateSubmitted,
+                status: btn.dataset.status,
+                isSupplierCompliant: btn.dataset.compliant === 'true'
+            };
+            openViewRequestModal(data);
+        });
+
+        // Check session state for newly appended user requests
+        document.addEventListener('DOMContentLoaded', () => {
+            const state = getSessionState();
+            if (state.myRequests && state.myRequests.length > 0) {
+                const tbody = document.querySelector('#myReqTable tbody');
+                state.myRequests.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+                    tr.style.backgroundColor = '#EBF2FA';
+                    tr.innerHTML = `
+                        <td><strong>${escapeHtml(item.requestName)}</strong></td>
+                        <td>${escapeHtml(item.supplierName)}</td>
+                        <td class="dc-caption">${escapeHtml(item.dateSubmitted)}</td>
+                        <td><span class="dc-status-chip pending-verification"><span class="dc-status-dot"></span> ${escapeHtml(item.status || 'Pending Approval')}</span></td>
+                        <td class="dc-table-action-col">
+                            <button type="button" 
+                                    class="dc-btn dc-btn-secondary dc-btn-sm btn-view-request"
+                                    data-id="${item.id || (1000 + index)}"
+                                    data-request-name="${escapeHtml(item.requestName)}"
+                                    data-supplier-name="${escapeHtml(item.supplierName)}"
+                                    data-requested-by="Leah Ramos (Staff / HR)"
+                                    data-purpose="${escapeHtml(item.purpose || 'Procurement of departmental materials and services according to operational requirements.')}"
+                                    data-date-submitted="${escapeHtml(item.dateSubmitted)}"
+                                    data-status="${escapeHtml(item.status || 'Pending Approval')}"
+                                    data-compliant="true">
+                                View
+                            </button>
+                        </td>
+                    `;
+                    tbody.insertBefore(tr, tbody.firstChild);
+                });
+            }
+        });
+    </script>
+}

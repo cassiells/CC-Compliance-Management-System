@@ -1,0 +1,1074 @@
+@page
+@model DoComply.Pages.Staff.ReportsModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Supplier Standing Reports & Analytics";
+
+    var compJson = JsonSerializer.Serialize(Model.ComplianceReports.Select(r => new { 
+        r.SupplierId, 
+        r.SupplierName, 
+        r.ComplianceStatus 
+    }));
+
+    var expJson = JsonSerializer.Serialize(Model.ExpiredReports.Select(r => new { 
+        r.SupplierId, 
+        r.SupplierName, 
+        r.Document, 
+        ExpiryDate = r.ExpiryDate.HasValue ? r.ExpiryDate.Value.ToString("yyyy-MM-dd") : "" 
+    }));
+
+    var expiringJson = JsonSerializer.Serialize(Model.ExpiringReports.Select(r => new { 
+        r.SupplierId, 
+        r.SupplierName, 
+        r.Document, 
+        ExpiryDate = r.ExpiryDate.HasValue ? r.ExpiryDate.Value.ToString("yyyy-MM-dd") : "" 
+    }));
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Staff/Suppliers">Staff</a> / <span>Reports & Analytics</span>
+        </div>
+        <h1 class="dc-h1">Supplier Standing Reports & Analytics</h1>
+        <p class="dc-body-secondary">Comprehensive compliance analytics, document expiration tracking, and interactive reports for staff members.</p>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px;">
+        <button type="button" class="dc-btn dc-btn-secondary" onclick="exportCurrentReportCSV()">
+            <i data-lucide="file-spreadsheet"></i> Export CSV
+        </button>
+        <button type="button" class="dc-btn dc-btn-primary" onclick="exportCurrentReportPDF()">
+            <i data-lucide="file-text"></i> Export PDF (QuestPDF)
+        </button>
+    </div>
+</div>
+
+<style>
+    .dc-tab-btn * { pointer-events: none; }
+</style>
+
+<!-- Report Navigation Tabs -->
+<div class="dc-tabs">
+    <button type="button" class="dc-tab-btn active" id="tabBtnCompliance" onclick="switchStaffTab('complianceTab', this)">
+        <i data-lucide="bar-chart-2"></i> Compliance Report
+        <span class="dc-tab-badge" id="badgeCompCount">@Model.TotalSuppliers</span>
+    </button>
+    <button type="button" class="dc-tab-btn" id="tabBtnExpired" onclick="switchStaffTab('expiredTab', this)">
+        <i data-lucide="alert-octagon"></i> Expired Documents
+        <span class="dc-tab-badge" id="badgeExpCount">@Model.TotalExpired</span>
+    </button>
+    <button type="button" class="dc-tab-btn" id="tabBtnExpiring" onclick="switchStaffTab('expiringTab', this)">
+        <i data-lucide="clock"></i> Expiring Documents
+        <span class="dc-tab-badge" id="badgeExpiringCount">@Model.TotalExpiring</span>
+    </button>
+</div>
+
+<!-- ==========================================
+     TAB 1: COMPLIANCE REPORT & ANALYTICS
+     ========================================== -->
+<div id="complianceTab" class="dc-staff-tab-pane">
+    <!-- Filter Toolbar -->
+    <div class="dc-card" style="margin-bottom: 20px; padding: 14px 18px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; background:#FFFFFF;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; flex:1;">
+            <div class="dc-search-input-wrapper" style="max-width:320px; width:100%;">
+                <i data-lucide="search" class="dc-search-icon" style="width:16px; height:16px;"></i>
+                <input type="text" id="compSearchInput" class="dc-search-input" placeholder="Search supplier name…" oninput="filterComplianceReport()" />
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px;">
+                <label for="compStatusFilter" style="font-size:13px; font-weight:600; color:var(--dc-text-secondary); white-space:nowrap;">Status Filter:</label>
+                <select id="compStatusFilter" class="dc-form-control" style="width:180px; padding:7px 12px; height:38px;" onchange="filterComplianceReport()">
+                    <option value="all">All Statuses (@Model.TotalSuppliers)</option>
+                    <option value="Compliant">Compliant (@Model.CompliantCount)</option>
+                    <option value="Not Compliant">Not Compliant (@Model.NotCompliantCount)</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="resetComplianceFilters()">
+            <i data-lucide="rotate-ccw" style="width:14px; height:14px;"></i> Reset Filter
+        </button>
+    </div>
+
+    <!-- KPI Metric Summary Cards -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid var(--dc-navy-primary);">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Total Evaluated</div>
+            <div style="font-size:26px; font-weight:700; color:var(--dc-navy-primary);" id="compKpiTotal">@Model.TotalSuppliers</div>
+            <div style="font-size:12px; color:var(--dc-text-muted); margin-top:4px;">Suppliers in network</div>
+        </div>
+
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid var(--dc-green-approve);">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Compliant Suppliers</div>
+            <div style="font-size:26px; font-weight:700; color:var(--dc-green-approve);" id="compKpiCompliant">@Model.CompliantCount</div>
+            <div style="font-size:12px; color:var(--dc-green-text); margin-top:4px;">All obligations valid</div>
+        </div>
+
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid var(--dc-red-reject);">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Non-Compliant</div>
+            <div style="font-size:26px; font-weight:700; color:var(--dc-red-reject);" id="compKpiNonCompliant">@Model.NotCompliantCount</div>
+            <div style="font-size:12px; color:var(--dc-red-text); margin-top:4px;">Missing / Expired items</div>
+        </div>
+
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid #3B82F6;">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Compliance Rate</div>
+            <div style="font-size:26px; font-weight:700; color:#1E40AF;" id="compKpiRate">@Model.ComplianceRate%</div>
+            <div style="font-size:12px; color:var(--dc-text-muted); margin-top:4px;">Network health benchmark</div>
+        </div>
+    </div>
+
+    <!-- Chart.js Visual Analytics -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:20px; margin-bottom:24px;">
+        <div class="dc-card" style="padding:20px; background:#FFFFFF;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="font-weight:600; font-size:15px; color:var(--dc-text-primary); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="pie-chart" style="width:18px; height:18px; color:var(--dc-navy-primary);"></i> Compliance Distribution
+                </div>
+                <span class="dc-caption" style="color:var(--dc-text-muted);">Real-time breakdown</span>
+            </div>
+            <div style="height:250px; position:relative;">
+                <canvas id="chartComplianceDoughnut"></canvas>
+            </div>
+        </div>
+
+        <div class="dc-card" style="padding:20px; background:#FFFFFF;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="font-weight:600; font-size:15px; color:var(--dc-text-primary); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="bar-chart" style="width:18px; height:18px; color:var(--dc-navy-primary);"></i> Supplier Standing Comparison
+                </div>
+                <span class="dc-caption" style="color:var(--dc-text-muted);">Status Volume</span>
+            </div>
+            <div style="height:250px; position:relative;">
+                <canvas id="chartComplianceBar"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginated Data Table (Strict 8 items per page) -->
+    <div class="dc-card" style="padding:0; overflow:hidden; background:#FFFFFF;">
+        <div style="padding:16px 20px; border-bottom:1px solid var(--dc-border); display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="font-size:15px; font-weight:600; margin:0;">Supplier Compliance Records</h3>
+            <span class="dc-caption" style="color:var(--dc-text-secondary); font-weight:500;" id="compTableInfo">Showing 1–8 of @Model.TotalSuppliers</span>
+        </div>
+
+        <div class="dc-table-container" style="border:none; border-radius:0;">
+            <table class="dc-table" id="complianceTable">
+                <thead>
+                    <tr>
+                        <th style="width:60%;">Supplier Name</th>
+                        <th style="width:40%;">Compliance Standing</th>
+                    </tr>
+                </thead>
+                <tbody id="complianceTableBody">
+                    <!-- Populated via JavaScript pagination controller -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Custom 8-Item Pagination Controls -->
+        <div class="dc-pagination-bar" id="compPaginationBar" style="padding:12px 20px; border-top:1px solid var(--dc-border);">
+            <div class="dc-pagination-info" id="compPageInfoText">Showing 1–8 of @Model.TotalSuppliers</div>
+            <div class="dc-pagination-controls" id="compPageButtons"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     TAB 2: EXPIRED DOCUMENTS REPORT & ANALYTICS
+     ========================================== -->
+<div id="expiredTab" class="dc-staff-tab-pane" style="display:none;">
+    <!-- Filter Toolbar -->
+    <div class="dc-card" style="margin-bottom: 20px; padding: 14px 18px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; background:#FFFFFF;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; flex:1;">
+            <div class="dc-search-input-wrapper" style="max-width:320px; width:100%;">
+                <i data-lucide="search" class="dc-search-icon" style="width:16px; height:16px;"></i>
+                <input type="text" id="expiredSearchInput" class="dc-search-input" placeholder="Search supplier or document…" oninput="filterExpiredReport()" />
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px;">
+                <label for="expiredDocFilter" style="font-size:13px; font-weight:600; color:var(--dc-text-secondary); white-space:nowrap;">Credential Filter:</label>
+                <select id="expiredDocFilter" class="dc-form-control" style="width:200px; padding:7px 12px; height:38px;" onchange="filterExpiredReport()">
+                    <option value="all">All Document Types (@Model.TotalExpired)</option>
+                    <option value="Tax Clearance">Tax Clearance</option>
+                    <option value="Safety Certificate">Safety Certificate</option>
+                    <option value="Business Permit">Business Permit</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="resetExpiredFilters()">
+            <i data-lucide="rotate-ccw" style="width:14px; height:14px;"></i> Reset Filter
+        </button>
+    </div>
+
+    <!-- KPI Metric Summary Cards -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:20px;">
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid var(--dc-red-reject);">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Total Expired Documents</div>
+            <div style="font-size:26px; font-weight:700; color:var(--dc-red-reject);" id="expKpiTotal">@Model.TotalExpired</div>
+            <div style="font-size:12px; color:var(--dc-red-text); margin-top:4px;">Immediate renewal required</div>
+        </div>
+
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid #F97316;">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Impacted Suppliers</div>
+            <div style="font-size:26px; font-weight:700; color:#EA580C;" id="expKpiSuppliers">@Model.ExpiredSuppliersCount</div>
+            <div style="font-size:12px; color:var(--dc-text-muted); margin-top:4px;">Unique non-compliant vendors</div>
+        </div>
+
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid var(--dc-navy-primary);">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Compliance Impact</div>
+            <div style="font-size:26px; font-weight:700; color:var(--dc-navy-primary);">Critical</div>
+            <div style="font-size:12px; color:var(--dc-text-muted); margin-top:4px;">Blocks procurement workflow</div>
+        </div>
+    </div>
+
+    <!-- Chart.js Visual Analytics -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:20px; margin-bottom:24px;">
+        <div class="dc-card" style="padding:20px; background:#FFFFFF;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="font-weight:600; font-size:15px; color:var(--dc-text-primary); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="file-x" style="width:18px; height:18px; color:var(--dc-red-reject);"></i> Expired by Credential Type
+                </div>
+                <span class="dc-caption" style="color:var(--dc-text-muted);">Breakdown</span>
+            </div>
+            <div style="height:250px; position:relative;">
+                <canvas id="chartExpiredTypesBar"></canvas>
+            </div>
+        </div>
+
+        <div class="dc-card" style="padding:20px; background:#FFFFFF;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="font-weight:600; font-size:15px; color:var(--dc-text-primary); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="building" style="width:18px; height:18px; color:var(--dc-navy-primary);"></i> Top Impacted Suppliers
+                </div>
+                <span class="dc-caption" style="color:var(--dc-text-muted);">Non-compliant counts</span>
+            </div>
+            <div style="height:250px; position:relative;">
+                <canvas id="chartExpiredSuppliersBar"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginated Data Table (Strict 8 items per page) -->
+    <div class="dc-card" style="padding:0; overflow:hidden; background:#FFFFFF;">
+        <div style="padding:16px 20px; border-bottom:1px solid var(--dc-border); display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="font-size:15px; font-weight:600; margin:0;">Expired Credential Audit Records</h3>
+            <span class="dc-caption" style="color:var(--dc-text-secondary); font-weight:500;" id="expTableInfo">Showing 1–8 of @Model.TotalExpired</span>
+        </div>
+
+        <div class="dc-table-container" style="border:none; border-radius:0;">
+            <table class="dc-table" id="expiredTable">
+                <thead>
+                    <tr>
+                        <th style="width:45%;">Supplier Name</th>
+                        <th style="width:35%;">Document Credential</th>
+                        <th style="width:20%;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="expiredTableBody">
+                    <!-- Populated via JavaScript pagination controller -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Custom 8-Item Pagination Controls -->
+        <div class="dc-pagination-bar" id="expPaginationBar" style="padding:12px 20px; border-top:1px solid var(--dc-border);">
+            <div class="dc-pagination-info" id="expPageInfoText">Showing 1–8 of @Model.TotalExpired</div>
+            <div class="dc-pagination-controls" id="expPageButtons"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     TAB 3: EXPIRING DOCUMENTS REPORT & ANALYTICS
+     ========================================== -->
+<div id="expiringTab" class="dc-staff-tab-pane" style="display:none;">
+    <!-- Filter Toolbar -->
+    <div class="dc-card" style="margin-bottom: 20px; padding: 14px 18px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; background:#FFFFFF;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; flex:1;">
+            <div class="dc-search-input-wrapper" style="max-width:320px; width:100%;">
+                <i data-lucide="search" class="dc-search-icon" style="width:16px; height:16px;"></i>
+                <input type="text" id="expiringSearchInput" class="dc-search-input" placeholder="Search supplier or document…" oninput="filterExpiringReport()" />
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px;">
+                <label for="expiringUrgencyFilter" style="font-size:13px; font-weight:600; color:var(--dc-text-secondary); white-space:nowrap;">Urgency Window:</label>
+                <select id="expiringUrgencyFilter" class="dc-form-control" style="width:190px; padding:7px 12px; height:38px;" onchange="filterExpiringReport()">
+                    <option value="all">All Horizons (@Model.TotalExpiring)</option>
+                    <option value="critical">Critical (≤ 15 Days)</option>
+                    <option value="upcoming">Upcoming (16–30 Days)</option>
+                </select>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px;">
+                <label for="expiringDocFilter" style="font-size:13px; font-weight:600; color:var(--dc-text-secondary); white-space:nowrap;">Credential:</label>
+                <select id="expiringDocFilter" class="dc-form-control" style="width:180px; padding:7px 12px; height:38px;" onchange="filterExpiringReport()">
+                    <option value="all">All Document Types</option>
+                    <option value="Tax Clearance">Tax Clearance</option>
+                    <option value="Safety Certificate">Safety Certificate</option>
+                    <option value="Business Permit">Business Permit</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="resetExpiringFilters()">
+            <i data-lucide="rotate-ccw" style="width:14px; height:14px;"></i> Reset Filter
+        </button>
+    </div>
+
+    <!-- KPI Metric Summary Cards -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:20px;">
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid #F59E0B;">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Total Expiring Soon</div>
+            <div style="font-size:26px; font-weight:700; color:#D97706;" id="expiringKpiTotal">@Model.TotalExpiring</div>
+            <div style="font-size:12px; color:var(--dc-text-muted); margin-top:4px;">Within next 30 days</div>
+        </div>
+
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid var(--dc-red-reject);">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Critical Urgency (≤ 15d)</div>
+            <div style="font-size:26px; font-weight:700; color:var(--dc-red-reject);" id="expiringKpiCritical">@Model.CriticalExpiringCount</div>
+            <div style="font-size:12px; color:var(--dc-red-text); margin-top:4px;">Requires expedited renewal</div>
+        </div>
+
+        <div class="dc-card" style="padding:16px 20px; border-left:4px solid #3B82F6;">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--dc-text-secondary); margin-bottom:6px;">Upcoming Window (16–30d)</div>
+            <div style="font-size:26px; font-weight:700; color:#1E40AF;" id="expiringKpiUpcoming">@Model.UpcomingExpiringCount</div>
+            <div style="font-size:12px; color:var(--dc-text-muted); margin-top:4px;">Notice period active</div>
+        </div>
+    </div>
+
+    <!-- Chart.js Visual Analytics -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:20px; margin-bottom:24px;">
+        <div class="dc-card" style="padding:20px; background:#FFFFFF;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="font-weight:600; font-size:15px; color:var(--dc-text-primary); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="clock" style="width:18px; height:18px; color:#D97706;"></i> Expiry Urgency Timeline
+                </div>
+                <span class="dc-caption" style="color:var(--dc-text-muted);">Horizon Distribution</span>
+            </div>
+            <div style="height:250px; position:relative;">
+                <canvas id="chartExpiringUrgencyDoughnut"></canvas>
+            </div>
+        </div>
+
+        <div class="dc-card" style="padding:20px; background:#FFFFFF;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="font-weight:600; font-size:15px; color:var(--dc-text-primary); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="bar-chart-3" style="width:18px; height:18px; color:var(--dc-navy-primary);"></i> Expiring by Document Type
+                </div>
+                <span class="dc-caption" style="color:var(--dc-text-muted);">Type Volume</span>
+            </div>
+            <div style="height:250px; position:relative;">
+                <canvas id="chartExpiringTypesBar"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginated Data Table (Strict 8 items per page) -->
+    <div class="dc-card" style="padding:0; overflow:hidden; background:#FFFFFF;">
+        <div style="padding:16px 20px; border-bottom:1px solid var(--dc-border); display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="font-size:15px; font-weight:600; margin:0;">Upcoming Expiration Obligation Schedule</h3>
+            <span class="dc-caption" style="color:var(--dc-text-secondary); font-weight:500;" id="expiringTableInfo">Showing 1–8 of @Model.TotalExpiring</span>
+        </div>
+
+        <div class="dc-table-container" style="border:none; border-radius:0;">
+            <table class="dc-table" id="expiringTable">
+                <thead>
+                    <tr>
+                        <th style="width:40%;">Supplier Name</th>
+                        <th style="width:30%;">Document Credential</th>
+                        <th style="width:18%;">Expiry Date</th>
+                        <th style="width:12%;">Urgency</th>
+                    </tr>
+                </thead>
+                <tbody id="expiringTableBody">
+                    <!-- Populated via JavaScript pagination controller -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Custom 8-Item Pagination Controls -->
+        <div class="dc-pagination-bar" id="expiringPaginationBar" style="padding:12px 20px; border-top:1px solid var(--dc-border);">
+            <div class="dc-pagination-info" id="expiringPageInfoText">Showing 1–8 of @Model.TotalExpiring</div>
+            <div class="dc-pagination-controls" id="expiringPageButtons"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Load Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script>
+        // Pagination Limit Constant (Fixed to 8 as requested)
+        const ITEMS_PER_PAGE = 8;
+
+        // Raw Server Data
+        const rawComplianceData = @Html.Raw(compJson);
+        const rawExpiredData = @Html.Raw(expJson);
+        const rawExpiringData = @Html.Raw(expiringJson);
+
+        // Active State
+        let currentTabId = 'complianceTab';
+        let filteredCompList = [...rawComplianceData];
+        let filteredExpList = [...rawExpiredData];
+        let filteredExpiringList = [...rawExpiringData];
+
+        let compCurrentPage = 1;
+        let expCurrentPage = 1;
+        let expiringCurrentPage = 1;
+
+        // Chart.js Instances
+        let chartCompDoughnut = null;
+        let chartCompBar = null;
+        let chartExpTypes = null;
+        let chartExpSuppliers = null;
+        let chartExpiringUrgency = null;
+        let chartExpiringTypes = null;
+
+        // Tab Switching Handler
+        function switchStaffTab(tabId, btn) {
+            document.querySelectorAll('.dc-staff-tab-pane').forEach(p => p.style.display = 'none');
+            document.querySelectorAll('.dc-tab-btn').forEach(b => b.classList.remove('active'));
+            
+            const targetPane = document.getElementById(tabId);
+            if (targetPane) targetPane.style.display = 'block';
+
+            let activeBtn = btn;
+            if (!activeBtn || !activeBtn.classList) {
+                if (tabId === 'complianceTab') activeBtn = document.getElementById('tabBtnCompliance');
+                else if (tabId === 'expiredTab') activeBtn = document.getElementById('tabBtnExpired');
+                else if (tabId === 'expiringTab') activeBtn = document.getElementById('tabBtnExpiring');
+            }
+            if (activeBtn) activeBtn.classList.add('active');
+            currentTabId = tabId;
+
+            // Trigger chart resize / update on tab view
+            setTimeout(() => {
+                if (tabId === 'complianceTab') {
+                    if (chartCompDoughnut) chartCompDoughnut.resize();
+                    if (chartCompBar) chartCompBar.resize();
+                } else if (tabId === 'expiredTab') {
+                    if (!chartExpTypes) initExpiredCharts();
+                    else {
+                        chartExpTypes.resize();
+                        chartExpSuppliers.resize();
+                    }
+                } else if (tabId === 'expiringTab') {
+                    if (!chartExpiringUrgency) initExpiringCharts();
+                    else {
+                        chartExpiringUrgency.resize();
+                        chartExpiringTypes.resize();
+                    }
+                }
+                if (window.lucide) lucide.createIcons();
+            }, 50);
+        }
+
+        /* ----------------------------------------------------
+           1. COMPLIANCE REPORT CONTROLLER (Strict 8 Items/Page)
+           ---------------------------------------------------- */
+        function initComplianceCharts() {
+            const ctxDoughnut = document.getElementById('chartComplianceDoughnut').getContext('2d');
+            const ctxBar = document.getElementById('chartComplianceBar').getContext('2d');
+
+            const compliant = filteredCompList.filter(r => r.ComplianceStatus === 'Compliant').length;
+            const nonCompliant = filteredCompList.filter(r => r.ComplianceStatus !== 'Compliant').length;
+
+            chartCompDoughnut = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Compliant', 'Non-Compliant'],
+                    datasets: [{
+                        data: [compliant, nonCompliant],
+                        backgroundColor: ['#10B981', '#EF4444'],
+                        borderWidth: 2,
+                        borderColor: '#FFFFFF',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Inter', size: 12 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.label}: ${ctx.raw} vendors (${Math.round(ctx.raw / (filteredCompList.length || 1) * 100)}%)`
+                            }
+                        }
+                    }
+                }
+            });
+
+            chartCompBar = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: ['Compliant', 'Non-Compliant'],
+                    datasets: [{
+                        label: 'Suppliers',
+                        data: [compliant, nonCompliant],
+                        backgroundColor: ['#10B981', '#EF4444'],
+                        borderRadius: 6,
+                        maxBarThickness: 45
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { font: { family: 'Inter' } } },
+                        x: { grid: { display: false }, ticks: { font: { family: 'Inter' } } }
+                    }
+                }
+            });
+        }
+
+        function filterComplianceReport() {
+            const query = (document.getElementById('compSearchInput').value || '').toLowerCase().trim();
+            const statusFilter = document.getElementById('compStatusFilter').value;
+
+            filteredCompList = rawComplianceData.filter(r => {
+                const matchesQuery = !query || r.SupplierName.toLowerCase().includes(query);
+                const matchesStatus = statusFilter === 'all' || r.ComplianceStatus === statusFilter;
+                return matchesQuery && matchesStatus;
+            });
+
+            compCurrentPage = 1;
+            renderComplianceTable();
+            updateComplianceAnalytics();
+        }
+
+        function resetComplianceFilters() {
+            document.getElementById('compSearchInput').value = '';
+            document.getElementById('compStatusFilter').value = 'all';
+            filterComplianceReport();
+        }
+
+        function updateComplianceAnalytics() {
+            const total = filteredCompList.length;
+            const compliant = filteredCompList.filter(r => r.ComplianceStatus === 'Compliant').length;
+            const nonCompliant = total - compliant;
+            const rate = total > 0 ? Math.round((compliant / total) * 100) : 0;
+
+            document.getElementById('compKpiTotal').textContent = total;
+            document.getElementById('compKpiCompliant').textContent = compliant;
+            document.getElementById('compKpiNonCompliant').textContent = nonCompliant;
+            document.getElementById('compKpiRate').textContent = `${rate}%`;
+
+            if (chartCompDoughnut) {
+                chartCompDoughnut.data.datasets[0].data = [compliant, nonCompliant];
+                chartCompDoughnut.update();
+            }
+            if (chartCompBar) {
+                chartCompBar.data.datasets[0].data = [compliant, nonCompliant];
+                chartCompBar.update();
+            }
+        }
+
+        function renderComplianceTable() {
+            const tbody = document.getElementById('complianceTableBody');
+            const totalItems = filteredCompList.length;
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+
+            if (compCurrentPage > totalPages) compCurrentPage = totalPages;
+            if (compCurrentPage < 1) compCurrentPage = 1;
+
+            const startIndex = (compCurrentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+            const pageSlice = filteredCompList.slice(startIndex, endIndex);
+
+            if (pageSlice.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:32px; color:var(--dc-text-muted);">No suppliers match the selected filter.</td></tr>`;
+            } else {
+                tbody.innerHTML = pageSlice.map(r => `
+                    <tr>
+                        <td><strong>${escapeHtml(r.SupplierName)}</strong></td>
+                        <td>
+                            <span class="dc-compliance-badge ${r.ComplianceStatus === 'Compliant' ? 'compliant' : 'not-compliant'}">
+                                <span class="dc-status-dot"></span> ${escapeHtml(r.ComplianceStatus)}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            const infoText = totalItems === 0 ? 'Showing 0–0 of 0' : `Showing ${startIndex + 1}–${endIndex} of ${totalItems}`;
+            document.getElementById('compTableInfo').textContent = infoText;
+            document.getElementById('compPageInfoText').textContent = infoText;
+
+            renderPaginationButtons('compPageButtons', compCurrentPage, totalPages, (newPage) => {
+                compCurrentPage = newPage;
+                renderComplianceTable();
+            });
+        }
+
+        /* ----------------------------------------------------
+           2. EXPIRED DOCUMENTS CONTROLLER (Strict 8 Items/Page)
+           ---------------------------------------------------- */
+        function initExpiredCharts() {
+            const ctxTypes = document.getElementById('chartExpiredTypesBar').getContext('2d');
+            const ctxSuppliers = document.getElementById('chartExpiredSuppliersBar').getContext('2d');
+
+            const typeCounts = getCountsByField(filteredExpList, 'Document');
+            const supCounts = getCountsByField(filteredExpList, 'SupplierName', 5);
+
+            chartExpTypes = new Chart(ctxTypes, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(typeCounts),
+                    datasets: [{
+                        label: 'Expired Documents',
+                        data: Object.values(typeCounts),
+                        backgroundColor: '#EF4444',
+                        borderRadius: 6,
+                        maxBarThickness: 45
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } }
+                    }
+                }
+            });
+
+            chartExpSuppliers = new Chart(ctxSuppliers, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(supCounts),
+                    datasets: [{
+                        label: 'Expired Credentials',
+                        data: Object.values(supCounts),
+                        backgroundColor: '#1E40AF',
+                        borderRadius: 6,
+                        maxBarThickness: 35
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { stepSize: 1 } },
+                        y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        function filterExpiredReport() {
+            const query = (document.getElementById('expiredSearchInput').value || '').toLowerCase().trim();
+            const docFilter = document.getElementById('expiredDocFilter').value;
+
+            filteredExpList = rawExpiredData.filter(r => {
+                const matchesQuery = !query || r.SupplierName.toLowerCase().includes(query) || r.Document.toLowerCase().includes(query);
+                const matchesDoc = docFilter === 'all' || r.Document === docFilter;
+                return matchesQuery && matchesDoc;
+            });
+
+            expCurrentPage = 1;
+            renderExpiredTable();
+            updateExpiredAnalytics();
+        }
+
+        function resetExpiredFilters() {
+            document.getElementById('expiredSearchInput').value = '';
+            document.getElementById('expiredDocFilter').value = 'all';
+            filterExpiredReport();
+        }
+
+        function updateExpiredAnalytics() {
+            const total = filteredExpList.length;
+            const uniqueSuppliers = new Set(filteredExpList.map(r => r.SupplierName)).size;
+
+            document.getElementById('expKpiTotal').textContent = total;
+            document.getElementById('expKpiSuppliers').textContent = uniqueSuppliers;
+
+            if (chartExpTypes) {
+                const typeCounts = getCountsByField(filteredExpList, 'Document');
+                chartExpTypes.data.labels = Object.keys(typeCounts);
+                chartExpTypes.data.datasets[0].data = Object.values(typeCounts);
+                chartExpTypes.update();
+            }
+
+            if (chartExpSuppliers) {
+                const supCounts = getCountsByField(filteredExpList, 'SupplierName', 5);
+                chartExpSuppliers.data.labels = Object.keys(supCounts);
+                chartExpSuppliers.data.datasets[0].data = Object.values(supCounts);
+                chartExpSuppliers.update();
+            }
+        }
+
+        function renderExpiredTable() {
+            const tbody = document.getElementById('expiredTableBody');
+            const totalItems = filteredExpList.length;
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+
+            if (expCurrentPage > totalPages) expCurrentPage = totalPages;
+            if (expCurrentPage < 1) expCurrentPage = 1;
+
+            const startIndex = (expCurrentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+            const pageSlice = filteredExpList.slice(startIndex, endIndex);
+
+            if (pageSlice.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:32px; color:var(--dc-text-muted);">No expired documents match the selected filter.</td></tr>`;
+            } else {
+                tbody.innerHTML = pageSlice.map(r => `
+                    <tr>
+                        <td><strong>${escapeHtml(r.SupplierName)}</strong></td>
+                        <td><span class="dc-status-chip expired"><span class="dc-status-dot"></span> ${escapeHtml(r.Document)}</span></td>
+                        <td><span style="font-weight:600; color:var(--dc-red-reject); font-size:12px;">Expired</span></td>
+                    </tr>
+                `).join('');
+            }
+
+            const infoText = totalItems === 0 ? 'Showing 0–0 of 0' : `Showing ${startIndex + 1}–${endIndex} of ${totalItems}`;
+            document.getElementById('expTableInfo').textContent = infoText;
+            document.getElementById('expPageInfoText').textContent = infoText;
+
+            renderPaginationButtons('expPageButtons', expCurrentPage, totalPages, (newPage) => {
+                expCurrentPage = newPage;
+                renderExpiredTable();
+            });
+        }
+
+        /* ----------------------------------------------------
+           3. EXPIRING DOCUMENTS CONTROLLER (Strict 8 Items/Page)
+           ---------------------------------------------------- */
+        function initExpiringCharts() {
+            const ctxUrgency = document.getElementById('chartExpiringUrgencyDoughnut').getContext('2d');
+            const ctxTypes = document.getElementById('chartExpiringTypesBar').getContext('2d');
+
+            const today = new Date();
+            let critical = 0;
+            let upcoming = 0;
+
+            filteredExpiringList.forEach(r => {
+                const days = getDaysUntil(r.ExpiryDate);
+                if (days <= 15) critical++;
+                else upcoming++;
+            });
+
+            const typeCounts = getCountsByField(filteredExpiringList, 'Document');
+
+            chartExpiringUrgency = new Chart(ctxUrgency, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Critical (≤ 15d)', 'Upcoming (16–30d)'],
+                    datasets: [{
+                        data: [critical, upcoming],
+                        backgroundColor: ['#EF4444', '#F59E0B'],
+                        borderWidth: 2,
+                        borderColor: '#FFFFFF',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Inter', size: 12 } } }
+                    }
+                }
+            });
+
+            chartExpiringTypes = new Chart(ctxTypes, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(typeCounts),
+                    datasets: [{
+                        label: 'Expiring Soon',
+                        data: Object.values(typeCounts),
+                        backgroundColor: '#F59E0B',
+                        borderRadius: 6,
+                        maxBarThickness: 45
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        function filterExpiringReport() {
+            const query = (document.getElementById('expiringSearchInput').value || '').toLowerCase().trim();
+            const urgencyFilter = document.getElementById('expiringUrgencyFilter').value;
+            const docFilter = document.getElementById('expiringDocFilter').value;
+
+            filteredExpiringList = rawExpiringData.filter(r => {
+                const matchesQuery = !query || r.SupplierName.toLowerCase().includes(query) || r.Document.toLowerCase().includes(query);
+                const matchesDoc = docFilter === 'all' || r.Document === docFilter;
+
+                let matchesUrgency = true;
+                if (urgencyFilter !== 'all') {
+                    const days = getDaysUntil(r.ExpiryDate);
+                    if (urgencyFilter === 'critical') matchesUrgency = days <= 15;
+                    else if (urgencyFilter === 'upcoming') matchesUrgency = days > 15;
+                }
+
+                return matchesQuery && matchesDoc && matchesUrgency;
+            });
+
+            expiringCurrentPage = 1;
+            renderExpiringTable();
+            updateExpiringAnalytics();
+        }
+
+        function resetExpiringFilters() {
+            document.getElementById('expiringSearchInput').value = '';
+            document.getElementById('expiringUrgencyFilter').value = 'all';
+            document.getElementById('expiringDocFilter').value = 'all';
+            filterExpiringReport();
+        }
+
+        function updateExpiringAnalytics() {
+            const total = filteredExpiringList.length;
+            let critical = 0;
+            let upcoming = 0;
+
+            filteredExpiringList.forEach(r => {
+                const days = getDaysUntil(r.ExpiryDate);
+                if (days <= 15) critical++;
+                else upcoming++;
+            });
+
+            document.getElementById('expiringKpiTotal').textContent = total;
+            document.getElementById('expiringKpiCritical').textContent = critical;
+            document.getElementById('expiringKpiUpcoming').textContent = upcoming;
+
+            if (chartExpiringUrgency) {
+                chartExpiringUrgency.data.datasets[0].data = [critical, upcoming];
+                chartExpiringUrgency.update();
+            }
+
+            if (chartExpiringTypes) {
+                const typeCounts = getCountsByField(filteredExpiringList, 'Document');
+                chartExpiringTypes.data.labels = Object.keys(typeCounts);
+                chartExpiringTypes.data.datasets[0].data = Object.values(typeCounts);
+                chartExpiringTypes.update();
+            }
+        }
+
+        function renderExpiringTable() {
+            const tbody = document.getElementById('expiringTableBody');
+            const totalItems = filteredExpiringList.length;
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+
+            if (expiringCurrentPage > totalPages) expiringCurrentPage = totalPages;
+            if (expiringCurrentPage < 1) expiringCurrentPage = 1;
+
+            const startIndex = (expiringCurrentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+            const pageSlice = filteredExpiringList.slice(startIndex, endIndex);
+
+            if (pageSlice.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:32px; color:var(--dc-text-muted);">No expiring documents match the selected filter.</td></tr>`;
+            } else {
+                tbody.innerHTML = pageSlice.map(r => {
+                    const days = getDaysUntil(r.ExpiryDate);
+                    const isCritical = days <= 15;
+                    const formattedDate = formatDateStr(r.ExpiryDate);
+
+                    return `
+                        <tr>
+                            <td><strong>${escapeHtml(r.SupplierName)}</strong></td>
+                            <td><span class="dc-status-chip expiring-soon"><span class="dc-status-dot"></span> ${escapeHtml(r.Document)}</span></td>
+                            <td>${formattedDate}</td>
+                            <td>
+                                <span class="dc-compliance-badge ${isCritical ? 'not-compliant' : 'expiring-soon'}" style="font-size:11px; padding:3px 8px;">
+                                    ${days >= 0 ? `${days}d remaining` : 'Expired'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            const infoText = totalItems === 0 ? 'Showing 0–0 of 0' : `Showing ${startIndex + 1}–${endIndex} of ${totalItems}`;
+            document.getElementById('expiringTableInfo').textContent = infoText;
+            document.getElementById('expiringPageInfoText').textContent = infoText;
+
+            renderPaginationButtons('expiringPageButtons', expiringCurrentPage, totalPages, (newPage) => {
+                expiringCurrentPage = newPage;
+                renderExpiringTable();
+            });
+        }
+
+        /* ----------------------------------------------------
+           HELPERS & PAGINATION BUTTON GENERATOR (Strict 8 Rows)
+           ---------------------------------------------------- */
+        function renderPaginationButtons(containerId, currentPage, totalPages, onPageClick) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            let html = `<button class="dc-page-btn" data-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''}>Prev</button>`;
+
+            const maxVisible = 5;
+            let start = Math.max(1, currentPage - 2);
+            let end = Math.min(totalPages, start + maxVisible - 1);
+
+            if (end - start < maxVisible - 1) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+
+            if (start > 1) {
+                html += `<button class="dc-page-btn" data-page="1">1</button>`;
+                if (start > 2) html += `<span style="padding:0 4px; color:#94A3B8;">...</span>`;
+            }
+
+            for (let i = start; i <= end; i++) {
+                html += `<button class="dc-page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+
+            if (end < totalPages) {
+                if (end < totalPages - 1) html += `<span style="padding:0 4px; color:#94A3B8;">...</span>`;
+                html += `<button class="dc-page-btn" data-page="${totalPages}">${totalPages}</button>`;
+            }
+
+            html += `<button class="dc-page-btn" data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>`;
+            container.innerHTML = html;
+
+            container.querySelectorAll('.dc-page-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetPage = parseInt(btn.getAttribute('data-page'));
+                    if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= totalPages && targetPage !== currentPage) {
+                        onPageClick(targetPage);
+                    }
+                });
+            });
+        }
+
+        function getCountsByField(list, field, topN = null) {
+            const map = {};
+            list.forEach(item => {
+                const val = item[field] || 'Unknown';
+                map[val] = (map[val] || 0) + 1;
+            });
+            if (!topN) return map;
+
+            const sortedKeys = Object.keys(map).sort((a, b) => map[b] - map[a]).slice(0, topN);
+            const topMap = {};
+            sortedKeys.forEach(k => topMap[k] = map[k]);
+            return topMap;
+        }
+
+        function getDaysUntil(dateStr) {
+            if (!dateStr) return 999;
+            const target = new Date(dateStr);
+            const now = new Date();
+            const diffTime = target - now;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        function formatDateStr(dateStr) {
+            if (!dateStr) return '—';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function exportCurrentReportPDF() {
+            let reportType = 'compliance';
+            let params = new URLSearchParams();
+
+            if (currentTabId === 'expiredTab') {
+                reportType = 'expired';
+                const search = document.getElementById('expSearchInput')?.value?.trim() || '';
+                if (search) params.append('search', search);
+            } else if (currentTabId === 'expiringTab') {
+                reportType = 'expiring';
+                const search = document.getElementById('expiringSearchInput')?.value?.trim() || '';
+                const range = document.getElementById('expiringRangeFilter')?.value || '';
+                if (search) params.append('search', search);
+                if (range && range !== 'all') params.append('range', range);
+            } else {
+                reportType = 'compliance';
+                const search = document.getElementById('compSearchInput')?.value?.trim() || '';
+                const status = document.getElementById('compStatusFilter')?.value || '';
+                if (search) params.append('search', search);
+                if (status && status !== 'all') params.append('status', status);
+            }
+
+            params.append('report', reportType);
+
+            showToast(`Generating QuestPDF report for ${reportType.toUpperCase()}...`);
+            window.location.href = `?handler=ExportPdf&${params.toString()}`;
+        }
+
+        function exportCurrentReportCSV() {
+            let csv = '';
+            let filename = '';
+
+            if (currentTabId === 'complianceTab') {
+                csv = "Supplier Name,Compliance Standing\n" + filteredCompList.map(r => `"${r.SupplierName}","${r.ComplianceStatus}"`).join('\n');
+                filename = 'DoComply_Compliance_Report_8_per_page.csv';
+            } else if (currentTabId === 'expiredTab') {
+                csv = "Supplier Name,Document Credential,Status\n" + filteredExpList.map(r => `"${r.SupplierName}","${r.Document}","Expired"`).join('\n');
+                filename = 'DoComply_Expired_Documents_Report.csv';
+            } else {
+                csv = "Supplier Name,Document Credential,Expiry Date\n" + filteredExpiringList.map(r => `"${r.SupplierName}","${r.Document}","${r.ExpiryDate}"`).join('\n');
+                filename = 'DoComply_Expiring_Documents_Report.csv';
+            }
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(`Exported ${filename} successfully!`);
+        }
+
+        // Initialize on DOM Ready
+        document.addEventListener('DOMContentLoaded', () => {
+            initComplianceCharts();
+            renderComplianceTable();
+            renderExpiredTable();
+            renderExpiringTable();
+            if (window.lucide) lucide.createIcons();
+
+            // Tab button explicit click listeners
+            document.getElementById('tabBtnCompliance')?.addEventListener('click', function() {
+                switchStaffTab('complianceTab', this);
+            });
+            document.getElementById('tabBtnExpired')?.addEventListener('click', function() {
+                switchStaffTab('expiredTab', this);
+            });
+            document.getElementById('tabBtnExpiring')?.addEventListener('click', function() {
+                switchStaffTab('expiringTab', this);
+            });
+
+            // Check URL query param (?tab=expired or ?tab=expiring) or hash
+            const urlParams = new URLSearchParams(window.location.search);
+            const reqTab = (urlParams.get('tab') || window.location.hash.replace('#', '')).toLowerCase();
+            if (reqTab === 'expired' || reqTab === 'expiredtab') {
+                switchStaffTab('expiredTab', document.getElementById('tabBtnExpired'));
+            } else if (reqTab === 'expiring' || reqTab === 'expiringtab') {
+                switchStaffTab('expiringTab', document.getElementById('tabBtnExpiring'));
+            }
+        });
+    </script>
+}

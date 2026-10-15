@@ -1,0 +1,15 @@
+@model (string Status, string Reasons)
+@{
+    bool isCompliant = string.Equals(Model.Status, "COMPLIANT", StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="dc-compliance-badge-wrapper">
+    <div class="dc-compliance-badge @(isCompliant ? "compliant" : "not-compliant")">
+        <span class="dc-status-dot"></span>
+        @(isCompliant ? "COMPLIANT" : "NOT COMPLIANT")
+    </div>
+    @if (!isCompliant && !string.IsNullOrWhiteSpace(Model.Reasons))
+    {
+        <div class="dc-compliance-reasons">@Model.Reasons</div>
+    }
+</div>

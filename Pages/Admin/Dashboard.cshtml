@@ -1,0 +1,166 @@
+@page
+@model DoComply.Pages.Admin.DashboardModel
+@{
+    ViewData["Title"] = "Administrator Dashboard";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Admin/Dashboard">Administrator</a> / <span>Dashboard</span>
+        </div>
+        <h1 class="dc-h1">Good morning, @Model.AdminName</h1>
+        <p class="dc-body-secondary">Here is the compliance position across your supplier network.</p>
+    </div>
+</div>
+
+<!-- Compact 7-Step Compliance Cycle Stepper -->
+<!-- <div class="dc-card" style="margin-bottom: 24px; padding: 16px 20px;">
+    <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--dc-text-secondary); margin-bottom:12px;">
+        Continuous Compliance Cycle Engine
+    </div>
+    <div class="dc-stepper">
+        <div class="dc-stepper-step"><i data-lucide="file-plus" style="width:14px; height:14px;"></i> 1. REQUIRE</div>
+        <i data-lucide="chevron-right" class="dc-stepper-arrow" style="width:16px; height:16px;"></i>
+        <div class="dc-stepper-step"><i data-lucide="upload" style="width:14px; height:14px;"></i> 2. SUBMIT</div>
+        <i data-lucide="chevron-right" class="dc-stepper-arrow" style="width:16px; height:16px;"></i>
+        <div class="dc-stepper-step"><i data-lucide="check-square" style="width:14px; height:14px;"></i> 3. VERIFY</div>
+        <i data-lucide="chevron-right" class="dc-stepper-arrow" style="width:16px; height:16px;"></i>
+        <div class="dc-stepper-step"><i data-lucide="activity" style="width:14px; height:14px;"></i> 4. MONITOR</div>
+        <i data-lucide="chevron-right" class="dc-stepper-arrow" style="width:16px; height:16px;"></i>
+        <div class="dc-stepper-step"><i data-lucide="bell" style="width:14px; height:14px;"></i> 5. NOTIFY</div>
+        <i data-lucide="chevron-right" class="dc-stepper-arrow" style="width:16px; height:16px;"></i>
+        <div class="dc-stepper-step"><i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> 6. RENEW</div>
+        <i data-lucide="chevron-right" class="dc-stepper-arrow" style="width:16px; height:16px;"></i>
+        <div class="dc-stepper-step"><i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i> 7. REPORT</div>
+    </div>
+</div> -->
+
+<!-- 5 Metric Summary Cards -->
+<div class="dc-summary-grid">
+    <div class="dc-metric-card" style="border-left: 4px solid var(--dc-green-approve);">
+        <div class="dc-metric-icon-bg" style="background:#E6F4EA; color:var(--dc-green-approve);"><i data-lucide="check-circle"></i></div>
+        <span class="dc-metric-label">Compliant Suppliers</span>
+        <span class="dc-metric-value">@Model.CompliantCount</span>
+    </div>
+
+    <div class="dc-metric-card" style="border-left: 4px solid var(--dc-red-reject);">
+        <div class="dc-metric-icon-bg" style="background:#FDE7E7; color:var(--dc-red-reject);"><i data-lucide="alert-octagon"></i></div>
+        <span class="dc-metric-label">Not Compliant Suppliers</span>
+        <span class="dc-metric-value">@Model.NotCompliantCount</span>
+    </div>
+
+    <div class="dc-metric-card" style="border-left: 4px solid var(--dc-yellow-pending-text);">
+        <div class="dc-metric-icon-bg" style="background:#FFF4DB; color:var(--dc-yellow-pending-text);"><i data-lucide="clock"></i></div>
+        <span class="dc-metric-label">Pending Verification</span>
+        <span class="dc-metric-value">@Model.PendingVerificationCount</span>
+    </div>
+
+    <div class="dc-metric-card" style="border-left: 4px solid var(--dc-orange-expiring-text);">
+        <div class="dc-metric-icon-bg" style="background:#FFEBD9; color:var(--dc-orange-expiring-text);"><i data-lucide="alert-triangle"></i></div>
+        <span class="dc-metric-label">Expiring Soon</span>
+        <span class="dc-metric-value">@Model.ExpiringSoonCount</span>
+    </div>
+
+    <div class="dc-metric-card" style="border-left: 4px solid var(--dc-darkred-expired-text);">
+        <div class="dc-metric-icon-bg" style="background:#FAD4D4; color:var(--dc-darkred-expired-text);"><i data-lucide="x-circle"></i></div>
+        <span class="dc-metric-label">Expired Documents</span>
+        <span class="dc-metric-value">@Model.ExpiredCount</span>
+    </div>
+</div>
+
+<div class="dc-grid-12">
+    <!-- Needs Attention Card -->
+    <div class="dc-col-6">
+        <div class="dc-card" style="height:100%;">
+            <div class="dc-card-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="triangle-alert" style="color:var(--dc-orange-expiring-text); width:20px; height:20px;"></i>
+                    <h3 class="dc-card-title">Needs Attention</h3>
+                </div>
+                <span class="dc-caption" style="font-weight:600; color:var(--dc-red-reject);">Action Required</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <a href="/Admin/ExpiryMonitoring" class="dc-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; text-decoration:none !important; background:#FFF4DB; border-color:#FDE68A;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="alert-octagon" style="color:var(--dc-red-reject); width:20px; height:20px;"></i>
+                        <div>
+                            <div style="font-weight:600; color:var(--dc-text-primary);">@Model.ExpiredCount expired document@(Model.ExpiredCount == 1 ? "" : "s")</div>
+                            <div style="font-size:12px; color:var(--dc-text-secondary);">
+                                @(Model.ExpiredSupplierNames.Any() ? string.Join(", ", Model.ExpiredSupplierNames) : "Action required for compliance")
+                            </div>
+                        </div>
+                    </div>
+                    <i data-lucide="arrow-right" style="width:16px; height:16px; color:var(--dc-text-secondary);"></i>
+                </a>
+
+                <a href="/Admin/VerificationQueue" class="dc-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; text-decoration:none !important; background:#F8FAFC;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="check-square" style="color:var(--dc-navy-primary); width:20px; height:20px;"></i>
+                        <div>
+                            <div style="font-weight:600; color:var(--dc-text-primary);">@Model.PendingVerificationCount submission@(Model.PendingVerificationCount == 1 ? "" : "s") need verification</div>
+                            <div style="font-size:12px; color:var(--dc-text-secondary);">Pending admin verification queue</div>
+                        </div>
+                    </div>
+                    <i data-lucide="arrow-right" style="width:16px; height:16px; color:var(--dc-text-secondary);"></i>
+                </a>
+
+                <a href="/Admin/ExpiryMonitoring" class="dc-card" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; text-decoration:none !important; background:#F8FAFC;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="clock" style="color:var(--dc-orange-expiring-text); width:20px; height:20px;"></i>
+                        <div>
+                            <div style="font-weight:600; color:var(--dc-text-primary);">@Model.ExpiringSoonCount document@(Model.ExpiringSoonCount == 1 ? "" : "s") expire within 30 days</div>
+                            <div style="font-size:12px; color:var(--dc-text-secondary);">Automatic renewal reminders dispatched</div>
+                        </div>
+                    </div>
+                    <i data-lucide="arrow-right" style="width:16px; height:16px; color:var(--dc-text-secondary);"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Card -->
+    <div class="dc-col-6">
+        <div class="dc-card" style="height:100%;">
+            <div class="dc-card-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="history" style="color:var(--dc-navy-primary); width:20px; height:20px;"></i>
+                    <h3 class="dc-card-title">Recent Activity</h3>
+                </div>
+                <span class="dc-caption">Live Audit Stream</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                @if (Model.RecentActivities.Any())
+                {
+                    @foreach (var act in Model.RecentActivities)
+                    {
+                        <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:#F8FAFC; border-radius:var(--dc-radius);">
+                            <div style="width:32px; height:32px; border-radius:50%; background:#EBF2FA; color:var(--dc-navy-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i data-lucide="activity" style="width:16px; height:16px;"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:600; font-size:14px; color:var(--dc-text-primary);">@act.Action</div>
+                                <div style="font-size:12px; color:var(--dc-text-secondary);">By @act.UserDisplayName in @act.Module • @act.OccurredAtUtc.ToLocalTime().ToString("MMM dd, hh:mm tt")</div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:#F8FAFC; border-radius:var(--dc-radius);">
+                        <div style="width:32px; height:32px; border-radius:50%; background:#E6F4EA; color:#1F8A4C; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i data-lucide="check" style="width:16px; height:16px;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:600; font-size:14px; color:var(--dc-text-primary);">Business Permit approved</div>
+                            <div style="font-size:12px; color:var(--dc-text-secondary);">Approved by Juan Dela Cruz for Global Logistics • 10 mins ago</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+</div>

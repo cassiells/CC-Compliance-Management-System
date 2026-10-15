@@ -1,0 +1,57 @@
+@model (long Id, string Type, string Title, string Message, string Time, bool Unread)
+@{
+    string iconName = "bell";
+    string iconClass = "info";
+
+    switch (Model.Type.ToLower())
+    {
+        case "warning":
+        case "expiring":
+            iconName = "alert-triangle";
+            iconClass = "warning";
+            break;
+        case "danger":
+        case "expired":
+        case "rejected":
+            iconName = "alert-circle";
+            iconClass = "danger";
+            break;
+        case "success":
+        case "approved":
+            iconName = "check-circle";
+            iconClass = "info";
+            break;
+        default:
+            iconName = "bell";
+            iconClass = "info";
+            break;
+    }
+}
+
+<div class="dc-notification-item @(Model.Unread ? "unread" : "")" style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+    <div style="display:flex; align-items:flex-start; gap:14px; flex:1; min-width:0;">
+        @if (Model.Unread)
+        {
+            <span class="dc-unread-dot"></span>
+        }
+        <div class="dc-notification-icon @iconClass">
+            <i data-lucide="@iconName" style="width:20px; height:20px;"></i>
+        </div>
+        <div class="dc-notification-content" style="flex:1; min-width:0;">
+            <div class="dc-notification-title">@Model.Title</div>
+            <div class="dc-notification-message" style="word-break:break-word;">@Model.Message</div>
+            <div class="dc-notification-time">@Model.Time</div>
+        </div>
+    </div>
+
+    @if (Model.Unread)
+    {
+        <div style="flex-shrink:0;">
+            <form method="post" asp-page-handler="MarkRead" asp-route-id="@Model.Id" style="display:inline; margin:0;">
+                <button type="submit" class="dc-btn dc-btn-ghost dc-btn-sm" style="font-size:12px; color:var(--dc-navy-primary); padding:6px 10px; border:1px solid #BFDBFE; background:#EFF6FF;" title="Mark this notification as read">
+                    <i data-lucide="check" style="width:14px; height:14px;"></i> Mark read
+                </button>
+            </form>
+        </div>
+    }
+</div>

@@ -1,0 +1,46 @@
+@page
+@model DoComply.Pages.SuperAdmin.NotificationsModel
+@{
+    ViewData["Title"] = "Super Admin Notifications";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/SuperAdmin/Overview">Super Admin</a> / <span>Notifications</span>
+        </div>
+        <h1 class="dc-h1" id="notificationsHeading">@Model.UnreadCount unread notification@(Model.UnreadCount == 1 ? "" : "s")</h1>
+        <p class="dc-body-secondary">System audit events, security alerts, and platform maintenance notifications.</p>
+    </div>
+
+    <div>
+        @if (Model.UnreadCount > 0)
+        {
+            <form method="post" asp-page-handler="MarkAllRead" style="display:inline;">
+                <button type="submit" id="markAllNotificationsReadBtn" class="dc-btn dc-btn-secondary">
+                    <i data-lucide="check-check"></i> Mark all as read
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="dc-notification-list">
+    @if (Model.NotificationsList.Any())
+    {
+        @foreach (var n in Model.NotificationsList)
+        {
+            <partial name="_NotificationItem" model="n" />
+        }
+    }
+    else
+    {
+        <div style="background:#FFFFFF; padding:48px 24px; text-align:center; color:var(--dc-text-secondary); display:flex; flex-direction:column; align-items:center; gap:12px;">
+            <div style="width:52px; height:52px; border-radius:50%; background:#F1F5F9; display:flex; align-items:center; justify-content:center; color:#94A3B8;">
+                <i data-lucide="bell-off" style="width:26px; height:26px;"></i>
+            </div>
+            <div style="font-size:16px; font-weight:600; color:var(--dc-text-primary);">All caught up!</div>
+            <p style="margin:0; font-size:14px; max-width:400px;">No pending security or system administration alerts at this time.</p>
+        </div>
+    }
+</div>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CC Compliance Engine</title>
+    <link rel="icon" type="image/png" href="~/images/cc-logo-mark.png" />
+    <link rel="stylesheet" href="~/css/docomply.css" asp-append-version="true" />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dc-app-shell">
+        <partial name="_Sidebar" />
+        
+        <div style="display:flex; flex-direction:column; flex:1;">
+            <partial name="_Topbar" />
+            <main class="dc-main-wrapper" role="main">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <!-- Sign Out Confirmation Modal -->
+    <partial name="_ConfirmModal" />
+
+    <script src="~/js/docomply.js" asp-append-version="true"></script>
+    <script>
+        // Prevent navigating back to authenticated pages after sign out (bfcache invalidation)
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted || (window.performance && window.performance.navigation && window.performance.navigation.type === 2)) {
+                window.location.reload();
+            }
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

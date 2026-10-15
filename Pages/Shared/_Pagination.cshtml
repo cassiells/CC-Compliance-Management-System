@@ -1,0 +1,33 @@
+@model (int TotalItems, int ItemsPerPage, int CurrentPage)
+@{
+    int totalItems = Model.TotalItems > 0 ? Model.TotalItems : 42;
+    int itemsPerPage = Model.ItemsPerPage > 0 ? Model.ItemsPerPage : 12;
+    int currentPage = Model.CurrentPage > 0 ? Model.CurrentPage : 1;
+    int totalPages = (int)Math.Ceiling((double)totalItems / itemsPerPage);
+    if (totalPages < 1) totalPages = 1;
+
+    int startIndex = (currentPage - 1) * itemsPerPage + 1;
+    int endIndex = Math.Min(currentPage * itemsPerPage, totalItems);
+}
+
+<div class="dc-pagination-bar">
+    <div class="dc-pagination-info">
+        Showing @startIndex–@endIndex of @totalItems
+    </div>
+    <div class="dc-pagination-controls">
+        <button class="dc-page-btn" data-page="@(currentPage - 1)" @(currentPage <= 1 ? "disabled" : "")>Prev</button>
+        
+        @for (int i = 1; i <= Math.Min(totalPages, 5); i++)
+        {
+            <button class="dc-page-btn @(i == currentPage ? "active" : "")" data-page="@i">@i</button>
+        }
+
+        @if (totalPages > 5)
+        {
+            <span style="padding:0 4px; color:#94A3B8;">...</span>
+            <button class="dc-page-btn @(totalPages == currentPage ? "active" : "")" data-page="@totalPages">@totalPages</button>
+        }
+
+        <button class="dc-page-btn" data-page="@(currentPage + 1)" @(currentPage >= totalPages ? "disabled" : "")>Next</button>
+    </div>
+</div>

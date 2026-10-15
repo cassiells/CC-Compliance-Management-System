@@ -1,0 +1,177 @@
+@page
+@model DoComply.Pages.SuperAdmin.RolesModel
+@{
+    ViewData["Title"] = "System Roles & Permissions";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/SuperAdmin/Overview">Super Admin</a> / <span>Roles</span>
+        </div>
+        <h1 class="dc-h1">System Roles & Permissions</h1>
+        <p class="dc-body-secondary">Role definitions and feature accessibility controls for CC.</p>
+    </div>
+</div>
+
+<div class="dc-grid-12">
+    <!-- Super Admin Role Card -->
+    <div class="dc-col-6">
+        <div class="dc-card" style="height:100%;">
+            <div class="dc-card-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="dc-avatar" style="background:#7C3AED;">SA</div>
+                    <div>
+                        <h3 class="dc-card-title">Super Admin</h3>
+                        <span class="dc-caption">System Governance</span>
+                    </div>
+                </div>
+                <span class="dc-status-chip valid"><span class="dc-status-dot"></span> Active Role</span>
+            </div>
+
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; padding:0;">
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Create user accounts
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Assign roles
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Manage system settings
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    View overall information
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    View audit logs
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Administrator Role Card -->
+    <div class="dc-col-6">
+        <div class="dc-card" style="height:100%;">
+            <div class="dc-card-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="dc-avatar">AD</div>
+                    <div>
+                        <h3 class="dc-card-title">Administrator</h3>
+                        <span class="dc-caption">Compliance Operations</span>
+                    </div>
+                </div>
+                <span class="dc-status-chip valid"><span class="dc-status-dot"></span> Active Role</span>
+            </div>
+
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; padding:0;">
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Create compliance requirements
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Register suppliers
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Verify documents
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Approve/reject submitted documents
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Monitor expiration
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Generate reports
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Approve procurement requests
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Staff / HR Role Card -->
+    <div class="dc-col-6">
+        <div class="dc-card" style="height:100%;">
+            <div class="dc-card-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="dc-avatar" style="background:var(--dc-navy-active);">ST</div>
+                    <div>
+                        <h3 class="dc-card-title">Staff / HR</h3>
+                        <span class="dc-caption">Department Requester</span>
+                    </div>
+                </div>
+                <span class="dc-status-chip valid"><span class="dc-status-dot"></span> Active Role</span>
+            </div>
+
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; padding:0;">
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    View suppliers
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    View compliance status
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Submit procurement requests
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    View reports or notifications
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Supplier Role Card -->
+    <div class="dc-col-6">
+        <div class="dc-card" style="height:100%;">
+            <div class="dc-card-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="dc-avatar" style="background:#0D9488;">SU</div>
+                    <div>
+                        <h3 class="dc-card-title">Supplier</h3>
+                        <span class="dc-caption">External Partner</span>
+                    </div>
+                </div>
+                <span class="dc-status-chip valid"><span class="dc-status-dot"></span> Active Role</span>
+            </div>
+
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; padding:0;">
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    View required documents
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Upload documents
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    See whether documents were approved or rejected
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    See expiration dates
+                </li>
+                <li style="display:flex; align-items:center; gap:10px; font-size:14px;">
+                    <i data-lucide="check-circle-2" style="color:var(--dc-green-approve); width:18px; height:18px;"></i>
+                    Receive notifications
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

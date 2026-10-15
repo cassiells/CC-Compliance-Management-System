@@ -1,0 +1,218 @@
+@inject DoComply.Models.DoComplyContext DbContext
+@{
+    string currentPath = Context.Request.Path.Value ?? "";
+    string? sessionRole = Context.Session.GetString("RoleName");
+    string? sessionName = Context.Session.GetString("FullName");
+    string? sessionUserId = Context.Session.GetString("UserId");
+
+    string role = "Admin";
+
+    if (currentPath.StartsWith("/SuperAdmin", StringComparison.OrdinalIgnoreCase))
+    {
+        role = "SuperAdmin";
+    }
+    else if (currentPath.StartsWith("/Staff", StringComparison.OrdinalIgnoreCase))
+    {
+        role = "Staff";
+    }
+    else if (currentPath.StartsWith("/Supplier", StringComparison.OrdinalIgnoreCase))
+    {
+        role = "Supplier";
+    }
+    else if (currentPath.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase))
+    {
+        role = "Admin";
+    }
+    else if (!string.IsNullOrEmpty(sessionRole))
+    {
+        if (sessionRole.Contains("Supplier", StringComparison.OrdinalIgnoreCase)) role = "Supplier";
+        else if (sessionRole.Contains("Staff", StringComparison.OrdinalIgnoreCase)) role = "Staff";
+        else if (sessionRole.Contains("Super", StringComparison.OrdinalIgnoreCase)) role = "SuperAdmin";
+        else role = "Admin";
+    }
+
+    // Determine current user ID for notifications
+    long currentUserId = 0;
+    long? currentSupId = null;
+    if (!string.IsNullOrEmpty(sessionUserId) && long.TryParse(sessionUserId, out var uid))
+    {
+        currentUserId = uid;
+    }
+    else
+    {
+        var matched = role switch
+        {
+            "Supplier" => DbContext.Users.FirstOrDefault(u => u.RoleId == 4),
+            "Staff" => DbContext.Users.FirstOrDefault(u => u.RoleId == 3),
+            "SuperAdmin" => DbContext.Users.FirstOrDefault(u => u.RoleId == 1),
+            _ => DbContext.Users.FirstOrDefault(u => u.RoleId == 2)
+        };
+        currentUserId = matched?.UserId ?? (role == "Supplier" ? 4 : 2);
+    }
+
+    if (role == "Supplier")
+    {
+        var sup = DbContext.Suppliers.FirstOrDefault(s => 
+            s.CreatedByUserId == currentUserId || 
+            (sessionName != null && s.SupplierName.Contains(sessionName)) ||
+            s.SupplierName == "ABC Office Supplies");
+        currentSupId = sup?.SupplierId ?? 1;
+    }
+
+    int unreadSidebarNotifs = 0;
+    try
+    {
+        unreadSidebarNotifs = DbContext.Notifications.Count(n => n.UserId == currentUserId && !n.IsRead);
+    }
+    catch
+    {
+        unreadSidebarNotifs = 0;
+    }
+}
+
+<aside class="dc-sidebar" id="dcSidebar">
+    <div>
+        <div class="dc-sidebar-header">
+            <partial name="_Logo" />
+        </div>
+
+        <nav class="dc-sidebar-nav">
+            @if (role == "SuperAdmin")
+            {
+                <a href="/SuperAdmin/Overview" class="dc-nav-item @(currentPath.Equals("/SuperAdmin/Overview", StringComparison.OrdinalIgnoreCase) || currentPath == "/SuperAdmin" ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="layout-dashboard"></i></span>
+                    <span>Overview</span>
+                </a>
+                <a href="/SuperAdmin/Users" class="dc-nav-item @(currentPath.Equals("/SuperAdmin/Users", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="users"></i></span>
+                    <span>User Management</span>
+                </a>
+                <a href="/SuperAdmin/Roles" class="dc-nav-item @(currentPath.Equals("/SuperAdmin/Roles", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="shield"></i></span>
+                    <span>Roles</span>
+                </a>
+                <a href="/SuperAdmin/Settings" class="dc-nav-item @(currentPath.Equals("/SuperAdmin/Settings", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="settings"></i></span>
+                    <span>System Settings</span>
+                </a>
+                <a href="/SuperAdmin/AuditLog" class="dc-nav-item @(currentPath.Equals("/SuperAdmin/AuditLog", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="file-text"></i></span>
+                    <span>Audit Log</span>
+                </a>
+                <a href="/SuperAdmin/Notifications" class="dc-nav-item @(currentPath.StartsWith("/SuperAdmin/Notifications", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="bell"></i></span>
+                    <span>Notifications</span>
+                    @if (unreadSidebarNotifs > 0)
+                    {
+                        <span class="dc-nav-badge">@unreadSidebarNotifs</span>
+                    }
+                </a>
+            }
+            else if (role == "Admin")
+            {
+                <a href="/Admin/Dashboard" class="dc-nav-item @(currentPath.Equals("/Admin/Dashboard", StringComparison.OrdinalIgnoreCase) || currentPath == "/Admin" ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="layout-dashboard"></i></span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/Admin/Requirements" class="dc-nav-item @(currentPath.Equals("/Admin/Requirements", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="list-checks"></i></span>
+                    <span>Requirements</span>
+                </a>
+                <a href="/Admin/Suppliers" class="dc-nav-item @(currentPath.StartsWith("/Admin/Supplier", StringComparison.OrdinalIgnoreCase) && !currentPath.Contains("Queue") ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="building-2"></i></span>
+                    <span>Suppliers</span>
+                </a>
+                <a href="/Admin/VerificationQueue" class="dc-nav-item @(currentPath.StartsWith("/Admin/Verification", StringComparison.OrdinalIgnoreCase) || currentPath.StartsWith("/Admin/DocumentReview", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="check-square"></i></span>
+                    <span>Verification Queue</span>
+                    <span class="dc-nav-badge">5</span>
+                </a>
+                <a href="/Admin/ExpiryMonitoring" class="dc-nav-item @(currentPath.Equals("/Admin/ExpiryMonitoring", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="clock"></i></span>
+                    <span>Expiry Monitoring</span>
+                </a>
+                <a href="/Admin/Procurement" class="dc-nav-item @(currentPath.StartsWith("/Admin/Procurement", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="shopping-bag"></i></span>
+                    <span>Procurement</span>
+                </a>
+                <a href="/Admin/Reports" class="dc-nav-item @(currentPath.Equals("/Admin/Reports", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="bar-chart-3"></i></span>
+                    <span>Reports</span>
+                </a>
+                <a href="/Admin/Notifications" class="dc-nav-item @(currentPath.StartsWith("/Admin/Notifications", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="bell"></i></span>
+                    <span>Notifications</span>
+                    @if (unreadSidebarNotifs > 0)
+                    {
+                        <span class="dc-nav-badge">@unreadSidebarNotifs</span>
+                    }
+                </a>
+            }
+            else if (role == "Staff")
+            {
+                <a href="/Staff/Suppliers" class="dc-nav-item @(currentPath.StartsWith("/Staff/Supplier", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="building-2"></i></span>
+                    <span>Suppliers</span>
+                </a>
+                <a href="/Staff/MyRequests" class="dc-nav-item @(currentPath.Equals("/Staff/MyRequests", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="file-check"></i></span>
+                    <span>My Requests</span>
+                </a>
+                <a href="/Staff/NewRequest" class="dc-nav-item @(currentPath.Equals("/Staff/NewRequest", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="plus-circle"></i></span>
+                    <span>New Request</span>
+                </a>
+                <a href="/Staff/Reports" class="dc-nav-item @(currentPath.Equals("/Staff/Reports", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="bar-chart-3"></i></span>
+                    <span>Reports</span>
+                </a>
+                <a href="/Staff/Notifications" class="dc-nav-item @(currentPath.StartsWith("/Staff/Notifications", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="bell"></i></span>
+                    <span>Notifications</span>
+                    @if (unreadSidebarNotifs > 0)
+                    {
+                        <span class="dc-nav-badge">@unreadSidebarNotifs</span>
+                    }
+                </a>
+            }
+            else if (role == "Supplier")
+            {
+                <a href="/Supplier/MyCompliance" class="dc-nav-item @(currentPath.Equals("/Supplier/MyCompliance", StringComparison.OrdinalIgnoreCase) || currentPath == "/Supplier" ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="file-badge"></i></span>
+                    <span>My Compliance</span>
+                </a>
+                <a href="/Supplier/UploadDocument" class="dc-nav-item @(currentPath.Equals("/Supplier/UploadDocument", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="upload-cloud"></i></span>
+                    <span>Upload Document</span>
+                </a>
+                <a href="/Supplier/Notifications" class="dc-nav-item @(currentPath.StartsWith("/Supplier/Notifications", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span class="dc-nav-icon"><i data-lucide="bell"></i></span>
+                    <span>Notifications</span>
+                    @if (unreadSidebarNotifs > 0)
+                    {
+                        <span class="dc-nav-badge">@unreadSidebarNotifs</span>
+                    }
+                </a>
+            }
+        </nav>
+    </div>
+
+    <div class="dc-sidebar-footer">
+        <div class="dc-org-panel">
+            <div class="dc-org-icon">
+                <i data-lucide="building"></i>
+            </div>
+            <div class="dc-org-info">
+                <span class="dc-org-name">CC Corporation</span>
+                <span class="dc-org-sub">
+                    @(role == "SuperAdmin" ? "Super Admin Portal" : (role == "Admin" ? "Compliance Admin" : (role == "Staff" ? "Staff Department" : "Supplier Portal")))
+                </span>
+            </div>
+        </div>
+
+        <button type="button" class="dc-signout-btn" data-dc-modal-target="confirmSignoutModal">
+            <i data-lucide="log-out" style="width:18px; height:18px;"></i>
+            <span>Sign out</span>
+        </button>
+    </div>
+</aside>

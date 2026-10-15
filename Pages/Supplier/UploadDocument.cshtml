@@ -1,0 +1,286 @@
+@page
+@model DoComply.Pages.Supplier.UploadDocumentModel
+@{
+    ViewData["Title"] = "Upload Compliance Document";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Supplier/MyCompliance">Supplier Portal</a> / <span>Upload Document</span>
+        </div>
+        <h1 class="dc-h1">Upload Compliance Document</h1>
+        <p class="dc-body-secondary">Submit renewed or initial compliance files for administrator verification.</p>
+    </div>
+</div>
+
+<div class="dc-grid-12">
+    <div class="dc-col-8">
+        <div class="dc-card">
+            <div class="dc-card-header">
+                <h3 class="dc-card-title">Document Upload Form</h3>
+                <span class="dc-caption">PDF, DOC, DOCX, Images up to 10 MB</span>
+            </div>
+
+            <form id="standaloneUploadForm" method="post" enctype="multipart/form-data">
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="standaloneDocName">Document Requirement</label>
+                    <select id="standaloneDocName" name="docName" class="dc-form-control" required onchange="updateDefaultFileName()">
+                        <option value="Business Permit">Business Permit</option>
+                        <option value="BIR Registration">BIR Registration</option>
+                        <option value="Tax Clearance">Tax Clearance</option>
+                        <option value="Safety Certificate" selected>Safety Certificate</option>
+                        <option value="Data Privacy Agreement">Data Privacy Agreement</option>
+                    </select>
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="standaloneDocExpiry">Document Expiry Date</label>
+                    <input type="date" id="standaloneDocExpiry" name="expiryDate" class="dc-form-control" value="2026-12-31" />
+                    <span class="dc-form-helper">Specify valid expiry date as shown on official document.</span>
+                </div>
+
+                <!-- Functional File Drop / Attach Area -->
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="standaloneFileInput">Attach File</label>
+                    
+                    <div id="standaloneDropZone" class="dc-dropzone">
+                        <!-- Native File Input overlaying the drop zone for direct native clicks and drops -->
+                        <input type="file"
+                               id="standaloneFileInput"
+                               name="documentFile"
+                               class="dc-dropzone-input"
+                               accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                               title="Click or drop document file here" />
+
+                        <!-- Empty / Prompt State (Active when no custom file chosen) -->
+                        <div id="dropPromptState" style="display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;">
+                            <div style="width:48px; height:48px; border-radius:50%; background:#EBF2FA; display:flex; align-items:center; justify-content:center; color:var(--dc-navy-primary);">
+                                <i data-lucide="upload-cloud" style="width:26px; height:26px;"></i>
+                            </div>
+                            <div>
+                                <span style="font-size:15px; font-weight:700; color:var(--dc-navy-primary);">Click to browse</span>
+                                <span style="font-size:15px; color:var(--dc-text-secondary);"> or drag &amp; drop file here</span>
+                            </div>
+                            <div id="defaultFileHint" class="dc-caption" style="font-weight:600; color:var(--dc-navy-active);">
+                                Default: ABC_SafetyCertificate_2026.pdf
+                            </div>
+                            <span class="dc-caption" style="color:var(--dc-text-secondary);">PDF, DOCX, PNG, JPG up to 10 MB • Digitally Signed</span>
+                        </div>
+
+                        <!-- File Attached State (Shown when real file is selected or dropped) -->
+                        <div id="dropAttachedState" style="display:none; width:100%; max-width:520px; z-index:10; position:relative;">
+                            <div style="background:#FFFFFF; border:1.5px solid #60A5FA; border-radius:8px; padding:14px 18px; box-shadow:0 2px 10px rgba(18,53,107,0.06); display:flex; align-items:center; gap:14px; text-align:left;">
+                                <div style="width:44px; height:44px; border-radius:8px; background:#E6F4EA; display:flex; align-items:center; justify-content:center; color:#1F8A4C; flex-shrink:0;">
+                                    <i data-lucide="file-check" style="width:24px; height:24px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div id="attachedFileName" style="font-size:14px; font-weight:700; color:var(--dc-text-primary); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                                        MyDocument.pdf
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:8px; margin-top:3px;">
+                                        <span id="attachedFileSize" class="dc-caption" style="color:var(--dc-text-secondary); font-weight:500;">1.2 MB</span>
+                                        <span style="font-size:11px; font-weight:700; color:#1F8A4C; background:#E6F4EA; padding:1px 8px; border-radius:4px;">
+                                            ✓ Ready to upload
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:6px;">
+                                    <button type="button" id="btnChangeFile" class="dc-btn dc-btn-secondary dc-btn-sm" style="padding:6px 12px; cursor:pointer;" title="Choose another file">
+                                        <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i>
+                                        <span style="margin-left:4px;">Change</span>
+                                    </button>
+                                    <button type="button" id="btnRemoveFile" class="dc-btn dc-btn-sm" style="padding:6px 10px; background:#FEE2E2; color:#DC2626; border:1px solid #FCA5A5; cursor:pointer;" title="Remove file">
+                                        <i data-lucide="trash-2" style="width:14px; height:14px;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Error Notice (Shown if file exceeds 10MB) -->
+                        <div id="dropErrorState" style="display:none; color:#DC2626; font-size:13px; font-weight:600; align-items:center; gap:6px; z-index:10; position:relative;">
+                            <i data-lucide="alert-circle" style="width:16px; height:16px;"></i>
+                            <span id="dropErrorMessage">File exceeds 10 MB limit. Please select a smaller file.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Box -->
+                <div class="dc-card" style="background:#FFF4DB; border-color:#FDE68A; padding:14px; margin-top:16px;">
+                    <div style="display:flex; align-items:flex-start; gap:10px;">
+                        <i data-lucide="triangle-alert" style="color:#B26A00; width:20px; height:20px; flex-shrink:0; margin-top:2px;"></i>
+                        <div style="font-size:12px; color:#B26A00;">
+                            <strong>Uploading does not make a document valid.</strong> Its status will be Pending Verification until an Administrator approves it.
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid var(--dc-border);">
+                    <a href="/Supplier/MyCompliance" class="dc-btn dc-btn-secondary">Cancel</a>
+                    <button type="submit" id="btnSubmitUpload" class="dc-btn dc-btn-primary dc-btn-lg">
+                        <i data-lucide="send"></i> Submit for Verification
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="dc-col-4">
+        <div class="dc-card">
+            <div class="dc-card-header">
+                <h3 class="dc-card-title">Verification Steps</h3>
+            </div>
+            <ol style="padding-left:20px; display:flex; flex-direction:column; gap:12px; font-size:13px; color:var(--dc-text-secondary);">
+                <li>Upload clear, legibly scanned PDF or credential document.</li>
+                <li>Status updates immediately to <strong>Pending Verification</strong>.</li>
+                <li>CC Admin reviews seal, validity date, and signature.</li>
+                <li>Upon approval, document status transitions to <strong>Valid</strong>.</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function() {
+            function updateDefaultFileName() {
+                const docSelect = document.getElementById('standaloneDocName');
+                const hint = document.getElementById('defaultFileHint');
+                if (docSelect && hint) {
+                    const clean = docSelect.value.replace(/\s+/g, '');
+                    hint.textContent = `Default: ABC_${clean}_2026.pdf`;
+                }
+            }
+            window.updateDefaultFileName = updateDefaultFileName;
+
+            function initAttachFileDropzone() {
+                const dropZone = document.getElementById('standaloneDropZone');
+                const fileInput = document.getElementById('standaloneFileInput');
+                const promptState = document.getElementById('dropPromptState');
+                const attachedState = document.getElementById('dropAttachedState');
+                const errorState = document.getElementById('dropErrorState');
+                const fileNameEl = document.getElementById('attachedFileName');
+                const fileSizeEl = document.getElementById('attachedFileSize');
+                const btnChange = document.getElementById('btnChangeFile');
+                const btnRemove = document.getElementById('btnRemoveFile');
+
+                if (!dropZone || !fileInput) return;
+
+                // Prevent browser window from opening files accidentally dropped outside the dropzone
+                window.addEventListener('dragover', function(e) { e.preventDefault(); }, false);
+                window.addEventListener('drop', function(e) { e.preventDefault(); }, false);
+
+                // Handle file selection (via click on input or drag onto input)
+                fileInput.addEventListener('change', function() {
+                    if (fileInput.files && fileInput.files.length > 0) {
+                        handleSelectedFile(fileInput.files[0]);
+                    }
+                });
+
+                // Change button triggers file input picker
+                if (btnChange) {
+                    btnChange.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        fileInput.click();
+                    });
+                }
+
+                // Remove button clears file and returns to prompt state
+                if (btnRemove) {
+                    btnRemove.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        fileInput.value = '';
+                        showPromptState();
+                    });
+                }
+
+                // Drag enter and drag over visual highlight
+                ['dragenter', 'dragover'].forEach(function(eventName) {
+                    dropZone.addEventListener(eventName, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropZone.classList.add('dragover');
+                    });
+                });
+
+                // Drag leave and drop styling reset
+                ['dragleave', 'drop'].forEach(function(eventName) {
+                    dropZone.addEventListener(eventName, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropZone.classList.remove('dragover');
+                    });
+                });
+
+                // Explicit drop event handler with preventDefault to guarantee drop works
+                dropZone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.remove('dragover');
+                    const dt = e.dataTransfer;
+                    if (dt && dt.files && dt.files.length > 0) {
+                        fileInput.files = dt.files;
+                        handleSelectedFile(dt.files[0]);
+                    }
+                });
+
+                function handleSelectedFile(file) {
+                    const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
+                    if (file.size > maxSizeBytes) {
+                        if (errorState) {
+                            errorState.style.display = 'flex';
+                            const msg = errorState.querySelector('#dropErrorMessage');
+                            if (msg) msg.textContent = `File "${file.name}" exceeds the 10 MB limit (${formatBytes(file.size)}).`;
+                        }
+                        fileInput.value = '';
+                        showPromptState();
+                        return;
+                    }
+
+                    if (errorState) errorState.style.display = 'none';
+                    if (fileNameEl) fileNameEl.textContent = file.name;
+                    if (fileSizeEl) fileSizeEl.textContent = formatBytes(file.size);
+
+                    if (promptState) promptState.style.display = 'none';
+                    if (attachedState) attachedState.style.display = 'block';
+                    fileInput.classList.add('attached');
+
+                    if (window.lucide) {
+                        window.lucide.createIcons();
+                    }
+                }
+
+                function showPromptState() {
+                    if (promptState) promptState.style.display = 'flex';
+                    if (attachedState) attachedState.style.display = 'none';
+                    if (errorState) errorState.style.display = 'none';
+                    fileInput.classList.remove('attached');
+
+                    if (window.lucide) {
+                        window.lucide.createIcons();
+                    }
+                }
+
+                function formatBytes(bytes) {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    initAttachFileDropzone();
+                    updateDefaultFileName();
+                });
+            } else {
+                initAttachFileDropzone();
+                updateDefaultFileName();
+            }
+        })();
+    </script>
+}

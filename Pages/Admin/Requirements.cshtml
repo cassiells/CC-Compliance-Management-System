@@ -1,0 +1,331 @@
+@page
+@model DoComply.Pages.Admin.RequirementsModel
+@{
+    ViewData["Title"] = "Compliance Requirements";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Admin/Dashboard">Administrator</a> / <span>Requirements</span>
+        </div>
+        <h1 class="dc-h1">Compliance Requirements</h1>
+        <p class="dc-body-secondary">Define document obligations required for active supplier status.</p>
+    </div>
+
+    <div>
+        <button type="button" class="dc-btn dc-btn-primary" data-dc-modal-target="addRequirementModal">
+            <i data-lucide="plus"></i> Add Requirement
+        </button>
+    </div>
+</div>
+
+<div class="dc-table-container" data-dc-table-paginate="reqTable" data-dc-per-page="12">
+    <table class="dc-table" id="reqTable">
+        <thead>
+            <tr>
+                <th>Requirement</th>
+                <th>Applies To</th>
+                <th>Expiry Required</th>
+                <th class="dc-table-action-col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var req in Model.RequirementsList)
+            {
+                <tr id="req-row-@req.RequirementId">
+                    <td class="req-name-cell"><strong>@req.RequirementName</strong></td>
+                    <td class="req-applies-cell">@req.AppliesTo</td>
+                    <td class="req-expiry-cell">
+                        @if (req.ExpiryRequired)
+                        {
+                            <span class="dc-status-chip expiring-soon"><span class="dc-status-dot"></span> Yes (Mandatory Expiry Date)</span>
+                        }
+                        else
+                        {
+                            <span class="dc-status-chip missing"><span class="dc-status-dot"></span> No Expiry Needed</span>
+                        }
+                    </td>
+                    <td class="dc-table-action-col">
+                        <button type="button" 
+                                class="dc-btn dc-btn-secondary dc-btn-sm"
+                                data-req-id="@req.RequirementId"
+                                data-req-name="@req.RequirementName"
+                                data-req-applies="@req.AppliesTo"
+                                data-req-expiry="@(req.ExpiryRequired ? "Yes" : "No")"
+                                onclick="openEditRequirementModal(this)">
+                            Edit
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <partial name="_Pagination" model="(Model.RequirementsList.Count, 12, 1)" />
+</div>
+
+<!-- Modal: Add Requirement Modal -->
+<div id="addRequirementModal" class="dc-modal-backdrop">
+    <div class="dc-modal-surface">
+        <div class="dc-modal-header">
+            <h3 class="dc-modal-title">Add Compliance Requirement</h3>
+            <button type="button" class="dc-modal-close" data-dc-modal-dismiss="addRequirementModal">
+                <i data-lucide="x" style="width:18px; height:18px;"></i>
+            </button>
+        </div>
+        <form id="addRequirementForm" method="post" asp-page-handler="Create" onsubmit="handleAddRequirementSubmit(event)">
+            @Html.AntiForgeryToken()
+            <div class="dc-modal-body">
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="reqNameInput">Requirement Name</label>
+                    <input type="text" id="reqNameInput" name="name" class="dc-form-control" placeholder="e.g. Environmental Compliance Certificate" required />
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="reqAppliesToInput">Applies To</label>
+                    <select id="reqAppliesToInput" name="appliesTo" class="dc-form-control">
+                        <option value="Supplier">Supplier</option>
+                        <option value="Department">Department</option>
+                        <option value="Both">Both</option>
+                    </select>
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="reqExpiryInput">Expiry Required</label>
+                    <select id="reqExpiryInput" name="expiry" class="dc-form-control">
+                        <option value="Yes">Yes (Mandatory Expiry Date)</option>
+                        <option value="No">No Expiry Needed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="dc-modal-footer">
+                <button type="button" class="dc-btn dc-btn-secondary" data-dc-modal-dismiss="addRequirementModal">Cancel</button>
+                <button type="submit" id="btnAddRequirementSubmit" class="dc-btn dc-btn-primary">Add Requirement</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Requirement Modal -->
+<div id="editRequirementModal" class="dc-modal-backdrop">
+    <div class="dc-modal-surface">
+        <div class="dc-modal-header">
+            <h3 class="dc-modal-title">Edit Compliance Requirement</h3>
+            <button type="button" class="dc-modal-close" data-dc-modal-dismiss="editRequirementModal">
+                <i data-lucide="x" style="width:18px; height:18px;"></i>
+            </button>
+        </div>
+        <form id="editRequirementForm" method="post" asp-page-handler="Update" onsubmit="handleEditRequirementSubmit(event)">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="editReqIdInput" name="id" />
+            <div class="dc-modal-body">
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="editReqNameInput">Requirement Name</label>
+                    <input type="text" id="editReqNameInput" name="name" class="dc-form-control" placeholder="e.g. Environmental Compliance Certificate" required />
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="editReqAppliesToInput">Applies To</label>
+                    <select id="editReqAppliesToInput" name="appliesTo" class="dc-form-control">
+                        <option value="Supplier">Supplier</option>
+                        <option value="Department">Department</option>
+                        <option value="Both">Both</option>
+                    </select>
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="editReqExpiryInput">Expiry Required</label>
+                    <select id="editReqExpiryInput" name="expiry" class="dc-form-control">
+                        <option value="Yes">Yes (Mandatory Expiry Date)</option>
+                        <option value="No">No Expiry Needed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="dc-modal-footer">
+                <button type="button" class="dc-btn dc-btn-secondary" data-dc-modal-dismiss="editRequirementModal">Cancel</button>
+                <button type="submit" id="btnSaveRequirement" class="dc-btn dc-btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditRequirementModal(btn) {
+            const id = btn.getAttribute('data-req-id');
+            const name = btn.getAttribute('data-req-name') || '';
+            const appliesTo = btn.getAttribute('data-req-applies') || 'Supplier';
+            const expiry = btn.getAttribute('data-req-expiry') || 'No';
+
+            document.getElementById('editReqIdInput').value = id;
+            document.getElementById('editReqNameInput').value = name;
+            document.getElementById('editReqAppliesToInput').value = appliesTo;
+            document.getElementById('editReqExpiryInput').value = expiry;
+
+            openDcModal('editRequirementModal');
+        }
+
+        async function handleEditRequirementSubmit(e) {
+            e.preventDefault();
+            const form = document.getElementById('editRequirementForm');
+            const id = document.getElementById('editReqIdInput').value;
+            const name = document.getElementById('editReqNameInput').value.trim();
+            const appliesTo = document.getElementById('editReqAppliesToInput').value;
+            const expiry = document.getElementById('editReqExpiryInput').value;
+
+            if (!name) {
+                showToast('Requirement name cannot be empty.');
+                return;
+            }
+
+            const saveBtn = document.getElementById('btnSaveRequirement');
+            const originalText = saveBtn ? saveBtn.innerHTML : 'Save Changes';
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width:14px; height:14px; margin-right:4px;"></i> Saving...';
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('?handler=Update', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Update table row in real time
+                    const row = document.getElementById(`req-row-${id}`);
+                    if (row) {
+                        const nameCell = row.querySelector('.req-name-cell');
+                        const appliesCell = row.querySelector('.req-applies-cell');
+                        const expiryCell = row.querySelector('.req-expiry-cell');
+                        const editBtn = row.querySelector('button[data-req-id]');
+
+                        if (nameCell) nameCell.innerHTML = `<strong>${name}</strong>`;
+                        if (appliesCell) appliesCell.textContent = appliesTo;
+                        if (expiryCell) {
+                            expiryCell.innerHTML = (expiry === 'Yes')
+                                ? '<span class="dc-status-chip expiring-soon"><span class="dc-status-dot"></span> Yes (Mandatory Expiry Date)</span>'
+                                : '<span class="dc-status-chip missing"><span class="dc-status-dot"></span> No Expiry Needed</span>';
+                        }
+                        if (editBtn) {
+                            editBtn.setAttribute('data-req-name', name);
+                            editBtn.setAttribute('data-req-applies', appliesTo);
+                            editBtn.setAttribute('data-req-expiry', expiry);
+                        }
+
+                        // Smooth highlight animation
+                        row.style.transition = 'background-color 0.4s ease';
+                        row.style.backgroundColor = '#EBF2FA';
+                        setTimeout(() => {
+                            row.style.backgroundColor = '';
+                        }, 2000);
+                    }
+
+                    closeDcModal('editRequirementModal');
+                    showToast(`Requirement "${name}" updated successfully.`);
+                } else {
+                    showToast(result.message || 'Error updating requirement.');
+                }
+            } catch (err) {
+                // Graceful fallback to standard form submission
+                form.submit();
+            } finally {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            }
+        }
+
+        async function handleAddRequirementSubmit(e) {
+            e.preventDefault();
+            const form = document.getElementById('addRequirementForm');
+            const name = document.getElementById('reqNameInput').value.trim();
+            const appliesTo = document.getElementById('reqAppliesToInput').value;
+            const expiry = document.getElementById('reqExpiryInput').value;
+
+            if (!name) {
+                showToast('Requirement name cannot be empty.');
+                return;
+            }
+
+            const addBtn = document.getElementById('btnAddRequirementSubmit');
+            const originalText = addBtn ? addBtn.innerHTML : 'Add Requirement';
+            if (addBtn) {
+                addBtn.disabled = true;
+                addBtn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width:14px; height:14px; margin-right:4px;"></i> Adding...';
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('?handler=Create', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    const tbody = document.querySelector('#reqTable tbody');
+                    const row = document.createElement('tr');
+                    row.id = `req-row-${result.id}`;
+                    row.style.transition = 'background-color 0.4s ease';
+                    row.style.backgroundColor = '#EBF2FA';
+                    row.innerHTML = `
+                        <td class="req-name-cell"><strong>${result.name}</strong></td>
+                        <td class="req-applies-cell">${result.appliesTo}</td>
+                        <td class="req-expiry-cell">
+                            ${result.expiry === 'Yes' 
+                                ? '<span class="dc-status-chip expiring-soon"><span class="dc-status-dot"></span> Yes (Mandatory Expiry Date)</span>' 
+                                : '<span class="dc-status-chip missing"><span class="dc-status-dot"></span> No Expiry Needed</span>'}
+                        </td>
+                        <td class="dc-table-action-col">
+                            <button type="button" 
+                                    class="dc-btn dc-btn-secondary dc-btn-sm"
+                                    data-req-id="${result.id}"
+                                    data-req-name="${result.name}"
+                                    data-req-applies="${result.appliesTo}"
+                                    data-req-expiry="${result.expiry}"
+                                    onclick="openEditRequirementModal(this)">
+                                Edit
+                            </button>
+                        </td>
+                    `;
+                    tbody.insertBefore(row, tbody.firstChild);
+
+                    setTimeout(() => {
+                        row.style.backgroundColor = '';
+                    }, 2000);
+
+                    closeDcModal('addRequirementModal');
+                    form.reset();
+                    showToast(`Requirement "${result.name}" added successfully.`);
+                } else {
+                    showToast(result.message || 'Error creating requirement.');
+                }
+            } catch (err) {
+                // Fallback to standard form submission
+                form.submit();
+            } finally {
+                if (addBtn) {
+                    addBtn.disabled = false;
+                    addBtn.innerHTML = originalText;
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            }
+        }
+    </script>
+}

@@ -1,0 +1,405 @@
+@page
+@model DoComply.Pages.Admin.DocumentReviewModel
+@{
+    ViewData["Title"] = "Review Document - " + Model.Doc;
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Admin/Dashboard">Administrator</a> / <a href="/Admin/VerificationQueue">Verification Queue</a> / <span>Document Review</span>
+        </div>
+        <h1 class="dc-h1">Document Verification Review</h1>
+        <p class="dc-body-secondary">Examine submitted credentials and record an official compliance decision.</p>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:12px;">
+        <button type="button" id="rejectDocumentBtn" class="dc-btn dc-btn-reject" onclick="document.getElementById('rejectionReasonSection').style.display='block'; document.getElementById('rejectionReasonText').focus(); document.getElementById('rejectionReasonSection').scrollIntoView({behavior:'smooth'});">
+            <i data-lucide="x-circle"></i> Reject
+        </button>
+        <form method="post" asp-page-handler="Approve" style="display:inline;">
+            <input type="hidden" name="submissionId" value="@Model.Id" />
+            <button type="submit" id="approveDocumentBtn" class="dc-btn dc-btn-approve">
+                <i data-lucide="check-circle"></i> Approve
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="dc-grid-12">
+    <!-- Left Column: Document Preview + Submission Details -->
+    <div class="dc-col-8" style="display:flex; flex-direction:column; gap:20px;">
+        <!-- Document Preview Box -->
+        <div class="dc-card" style="padding:0; overflow:hidden;">
+            <div style="padding:16px 20px; background:#F8FAFC; border-bottom:1px solid var(--dc-border); display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i data-lucide="file-text" style="color:var(--dc-navy-primary);"></i>
+                    <strong style="font-size:15px;">@Model.Doc Document Preview</strong>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.StorageObjectKey) && (Model.StorageObjectKey.StartsWith("/uploads/") || Model.StorageObjectKey.StartsWith("http")))
+                {
+                    <a href="@Model.StorageObjectKey" target="_blank" class="dc-btn dc-btn-secondary dc-btn-sm">
+                        <i data-lucide="external-link"></i> View Full Document
+                    </a>
+                }
+                else
+                {
+                    <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="showToast('Opening high-resolution document viewer...')">
+                        <i data-lucide="external-link"></i> View Full Document
+                    </button>
+                }
+            </div>
+
+            <!-- PDF / Permit Visual Mock Preview Surface -->
+            <div style="padding:40px; background:#EBF2FA; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:420px; text-align:center;">
+                <div style="width:320px; background:#FFFFFF; padding:24px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.08); border:1px solid var(--dc-border);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; border-bottom:2px solid var(--dc-navy-primary); padding-bottom:12px;">
+                        <div style="font-weight:700; font-size:14px; color:var(--dc-navy-primary);">REPUBLIC COMPLIANCE PERMIT</div>
+                        <i data-lucide="award" style="color:var(--dc-navy-primary);"></i>
+                    </div>
+                    <div style="font-size:13px; text-align:left; display:flex; flex-direction:column; gap:8px;">
+                        <div><strong>Issued To:</strong> @Model.Supplier</div>
+                        <div><strong>Document Type:</strong> @Model.Doc</div>
+                        <div><strong>Permit No:</strong> PERMIT-2026-9941A</div>
+                        <div><strong>Valid Until:</strong> Dec. 31, 2026</div>
+                    </div>
+                    <div style="margin-top:20px; padding:8px; background:#E6F4EA; border-radius:4px; font-size:11px; font-weight:700; color:#1F8A4C; letter-spacing:0.05em;">
+                        DIGITALLY SIGNED & SEALED
+                    </div>
+                </div>
+                <div style="margin-top:16px; font-size:12px; color:var(--dc-text-secondary);">
+                    File: <span style="font-weight:600; color:var(--dc-text-primary);">@Model.FileName</span> (@Model.FileSizeText)
+                </div>
+            </div>
+        </div>
+
+        <!-- Submission Details Card (Under Document Preview) -->
+        <div class="dc-card">
+            <div class="dc-card-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="clipboard-list" style="color:var(--dc-navy-primary); width:18px; height:18px;"></i>
+                    <h3 class="dc-card-title" style="margin:0;">Submission Details</h3>
+                </div>
+                <span class="dc-status-chip pending-verification"><span class="dc-status-dot"></span> @Model.Status</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:16px;">
+                <div style="background:#F8FAFC; padding:12px 14px; border-radius:var(--dc-radius); border:1px solid var(--dc-border);">
+                    <div class="dc-caption">Supplier Name</div>
+                    <div style="font-weight:700; font-size:14px; color:var(--dc-text-primary); margin-top:2px;">@Model.Supplier</div>
+                </div>
+
+                <div style="background:#F8FAFC; padding:12px 14px; border-radius:var(--dc-radius); border:1px solid var(--dc-border);">
+                    <div class="dc-caption">Document Requirement</div>
+                    <div style="font-weight:600; font-size:14px; color:var(--dc-text-primary); margin-top:2px;">@Model.Doc</div>
+                </div>
+
+                <div style="background:#F8FAFC; padding:12px 14px; border-radius:var(--dc-radius); border:1px solid var(--dc-border);">
+                    <div class="dc-caption">Submission Timestamp</div>
+                    <div style="font-weight:500; font-size:14px; color:var(--dc-text-primary); margin-top:2px;">@Model.SubmittedAt</div>
+                </div>
+
+                <div style="background:#F8FAFC; padding:12px 14px; border-radius:var(--dc-radius); border:1px solid var(--dc-border);">
+                    <div class="dc-caption">Entered Expiry Date</div>
+                    <div style="font-weight:500; font-size:14px; color:var(--dc-text-primary); margin-top:2px;">@Model.ExpiryDateText</div>
+                </div>
+            </div>
+
+            <!-- Rejection Reason Input Section (Revealed when Reject is clicked) -->
+            <div id="rejectionReasonSection" style="display:none; padding-top:16px; border-top:1px solid var(--dc-border); margin-bottom:14px;">
+                <form method="post" asp-page-handler="Reject">
+                    <input type="hidden" name="submissionId" value="@Model.Id" />
+                    <div class="dc-form-group">
+                        <label class="dc-form-label" style="color:var(--dc-red-reject); font-weight:600;">Reason for Rejection</label>
+                        <textarea id="rejectionReasonText" name="reason" class="dc-form-control" rows="3" placeholder="Specify why this document is invalid or incomplete (e.g. Expired seal, missing signature)..." required></textarea>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px;">
+                        <button type="button" class="dc-btn dc-btn-secondary dc-btn-sm" onclick="document.getElementById('rejectionReasonSection').style.display='none';">Cancel</button>
+                        <button type="submit" class="dc-btn dc-btn-reject" style="background:#C62828; color:#FFFFFF;">
+                            Confirm Rejection
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div style="padding:12px 16px; background:#F8FAFC; border-radius:var(--dc-radius); font-size:12px; color:var(--dc-text-secondary); display:flex; align-items:center; gap:8px; border:1px solid var(--dc-border);">
+                <i data-lucide="info" style="width:16px; height:16px; flex-shrink:0; color:var(--dc-navy-primary);"></i>
+                <span>The supplier is notified automatically when an official compliance decision is recorded.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Verification & Decision -->
+    <div class="dc-col-4" style="display:flex; flex-direction:column; gap:20px;">
+        @Html.AntiForgeryToken()
+
+        <!-- Official LookupTax BIR TIN Verification Card -->
+        <div class="dc-card" id="birVerificationCard" style="border-top: 3px solid #0284C7; position: relative;">
+            <div class="dc-card-header" style="align-items: flex-start; margin-bottom: 12px; padding-bottom: 10px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="display:inline-flex; align-items:center; justify-content:center; padding: 2px 7px; border-radius:4px; background:#0F172A; color:#38BDF8; font-size:10px; font-weight:800; letter-spacing:0.5px;">LOOKUPTAX</span>
+                        <h3 class="dc-card-title" style="margin: 0; font-size: 15px;">TIN Verification API</h3>
+                    </div>
+                    <div class="dc-caption" style="margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                        <i data-lucide="shield-check" style="width: 13px; height: 13px; color: #1F8A4C;"></i>
+                        <span>LookupTax Global Tax Validation &bull; BIR TIN (PH)</span>
+                    </div>
+                </div>
+                <span id="birStatusChip" class="dc-status-chip @(Model.BirResult?.IsValid == true ? "valid" : "missing")" style="font-size: 11px; padding: 3px 8px;">
+                    <span class="dc-status-dot"></span>
+                    <span id="birStatusText">@(Model.BirResult?.TaxpayerStatus ?? "ACTIVE")</span>
+                </span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- TIN Display Box -->
+                <div style="background: #F8FAFC; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); padding: 12px 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span class="dc-caption" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px;">Supplier Document TIN</span>
+                        <button type="button" class="dc-btn dc-btn-text dc-btn-sm" style="padding: 0; height: auto; font-size: 11px; color: var(--dc-navy-primary);" onclick="copyBirTin()">
+                            <i data-lucide="copy" style="width: 12px; height: 12px;"></i> Copy
+                        </button>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span id="birFormattedTin" style="font-family: monospace; font-size: 15px; font-weight: 700; color: var(--dc-text-primary); letter-spacing: 0.05em;">
+                            @(Model.BirResult?.FormattedTin ?? Model.SupplierTin)
+                        </span>
+                        <span class="dc-status-chip" style="background: #E8F0FE; color: #1967D2; font-size: 10px; padding: 2px 6px;">
+                            Head Office (000)
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Registered Legal Entity -->
+                <div>
+                    <div class="dc-caption">LookupTax Registered Business Name</div>
+                    <div id="birRegisteredName" style="font-weight: 700; font-size: 13px; color: var(--dc-text-primary); margin-top: 2px;">
+                        @(Model.BirResult?.RegisteredBusinessName ?? Model.Supplier.ToUpper() + " TRADING CORP.")
+                    </div>
+                    <div id="birNameMatchBadge" style="margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: @(Model.BirResult?.NameMatchesSupplier == true ? "#E6F4EA" : "#FEF7E0"); color: @(Model.BirResult?.NameMatchesSupplier == true ? "#1F8A4C" : "#B06000");">
+                        <i data-lucide="@(Model.BirResult?.NameMatchesSupplier == true ? "check" : "alert-triangle")" style="width: 12px; height: 12px;"></i>
+                        <span id="birNameMatchText">@(Model.BirResult?.NameMatchScorePercentage ?? 100)% Name Match with Supplier Record</span>
+                    </div>
+                </div>
+
+                <!-- RDO Jurisdiction & Taxpayer Classification -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 4px; border-top: 1px dashed var(--dc-border);">
+                    <div>
+                        <div class="dc-caption">Revenue District Office</div>
+                        <div id="birRdo" style="font-weight: 600; font-size: 12px; color: var(--dc-text-primary); margin-top: 2px;">
+                            @(Model.BirResult?.RdoLocation ?? "RDO 044 - Taguig City / Pateros")
+                        </div>
+                    </div>
+                    <div>
+                        <div class="dc-caption">Taxpayer Type</div>
+                        <div id="birTaxpayerType" style="font-weight: 600; font-size: 12px; color: var(--dc-text-primary); margin-top: 2px;">
+                            @(Model.BirResult?.TaxpayerType ?? "Corporate / Domestic")
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tax Clearance Standing -->
+                <div id="birTaxClearanceBox" style="background: #F4FBF7; border: 1px solid #C6E7D1; border-radius: var(--dc-radius); padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px;">
+                    <i data-lucide="check-circle-2" id="birTaxClearanceIcon" style="width: 16px; height: 16px; color: #1F8A4C; flex-shrink: 0; margin-top: 2px;"></i>
+                    <div style="font-size: 12px;">
+                        <div id="birTaxClearanceTitle" style="font-weight: 700; color: #137333;">Tax Clearance in Good Standing</div>
+                        <div id="birTaxClearanceDetail" style="color: #2D4A3E; margin-top: 2px;">
+                            @(Model.BirResult?.TaxClearanceNumber ?? "TC-LT-2026-9041") &bull; Valid until @(Model.BirResult?.TaxClearanceValidUntil?.ToString("MMM dd, yyyy") ?? "Dec 31, 2026")
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verification Meta & Toggle Manual Query -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--dc-border); padding-top: 10px; font-size: 11px; color: var(--dc-text-secondary);">
+                    <span id="birVerifiedAt">Source: @(Model.BirResult?.VerificationSource ?? "LookupTax API") &bull; @(Model.BirResult?.VerifiedAtUtc.ToLocalTime().ToString("hh:mm:ss tt") ?? "Live")</span>
+                    <button type="button" class="dc-btn dc-btn-text dc-btn-sm" style="padding: 0; height: auto; font-size: 11px; text-decoration: underline; color: var(--dc-navy-primary);" onclick="toggleBirSearchBox()">
+                        Test Another TIN
+                    </button>
+                </div>
+
+                <!-- Interactive Live TIN Lookup Widget (Collapsible) -->
+                <div id="birSearchBox" style="display: none; background: #F8FAFC; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); padding: 12px; margin-top: 4px;">
+                    <label class="dc-caption" style="display: block; font-weight: 600; margin-bottom: 6px;">Test LookupTax Philippine TIN Lookup:</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="customTinInput" class="dc-form-control" style="font-family: monospace; font-size: 13px;" placeholder="e.g. 198-442-701-000 or 9000908888" value="" />
+                        <button type="button" id="btnVerifyTinLive" class="dc-btn dc-btn-primary dc-btn-sm" style="white-space: nowrap;" onclick="verifyTinAjax()">
+                            <i data-lucide="search"></i> Check
+                        </button>
+                    </div>
+                    <div id="tinLookupSpinner" style="display:none; font-size:11px; color:var(--dc-navy-primary); margin-top:6px; align-items:center; gap:6px;">
+                        <i data-lucide="loader-2" class="spin" style="width:12px; height:12px;"></i> Calling live LookupTax API (consumes query quota)...
+                    </div>
+                    <div class="dc-caption" style="margin-top: 8px; font-size: 11px;">
+                        Presets: 
+                        <a href="javascript:void(0)" style="color:var(--dc-navy-primary); text-decoration:underline;" onclick="setAndVerifyTin('245-891-304-000')">ABC Office</a> &bull; 
+                        <a href="javascript:void(0)" style="color:var(--dc-navy-primary); text-decoration:underline;" onclick="setAndVerifyTin('198-442-701-000')">DEF Equip</a> &bull; 
+                        <a href="javascript:void(0)" style="color:var(--dc-navy-primary); text-decoration:underline;" onclick="setAndVerifyTin('310-776-852-000')">XYZ Training</a> &bull; 
+                        <a href="javascript:void(0)" style="color:var(--dc-navy-primary); text-decoration:underline;" onclick="setAndVerifyTin('9000908888')">9000908888</a>
+                    </div>
+
+                    <!-- Dedicated Test Result Box -->
+                    <div id="lookupTaxTestResultBox" style="display:none; margin-top:12px; padding:10px 12px; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:6px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#475569;">LookupTax Live Result</span>
+                            <span id="testResultBadge" class="dc-status-chip valid" style="font-size:10px; padding:2px 6px;">VALID</span>
+                        </div>
+                        <div style="font-size:12px; margin-bottom:4px;">
+                            <span style="color:#64748B;">Tested TIN:</span> <strong id="testResultTin" style="font-family:monospace;"></strong>
+                        </div>
+                        <div style="font-size:12px; color:#334155; margin-bottom:6px; line-height:1.4;" id="testResultMessage"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #E2E8F0; padding-top:6px; font-size:11px; color:#64748B;">
+                            <span id="testResultRefId" style="font-family:monospace; color:#0284C7; font-weight:600;">Ref #--</span>
+                            <button type="button" class="dc-btn dc-btn-text dc-btn-sm" style="font-size:11px; color:var(--dc-navy-primary); text-decoration:underline; padding:0; height:auto;" onclick="applyTestTinToDocument()">
+                                Apply to Supplier Card &rarr;
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function copyBirTin() {
+        const tinText = document.getElementById('birFormattedTin').textContent.trim();
+        navigator.clipboard.writeText(tinText).then(() => {
+            showToast('BIR TIN ' + tinText + ' copied to clipboard');
+        }).catch(() => {
+            showToast('TIN: ' + tinText);
+        });
+    }
+
+    function toggleBirSearchBox() {
+        const box = document.getElementById('birSearchBox');
+        if (box.style.display === 'none' || box.style.display === '') {
+            box.style.display = 'block';
+            document.getElementById('customTinInput').focus();
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    function setAndVerifyTin(tin) {
+        document.getElementById('customTinInput').value = tin;
+        verifyTinAjax();
+    }
+
+    async function verifyTinAjax() {
+        const tinInput = document.getElementById('customTinInput').value.trim();
+        if (!tinInput) {
+            showToast('Please enter a TIN to verify.');
+            return;
+        }
+
+        const spinner = document.getElementById('tinLookupSpinner');
+        const btn = document.getElementById('btnVerifyTinLive');
+        spinner.style.display = 'flex';
+        btn.disabled = true;
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        const formData = new FormData();
+        formData.append('tin', tinInput);
+        formData.append('supplierName', '@Html.Raw(Model.Supplier.Replace("'", "\\'"))');
+
+        try {
+            const response = await fetch('?handler=VerifyTin', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Verification request returned status ' + response.status);
+            }
+
+            const data = await response.json();
+            window.lastTestedTinData = data;
+            
+            // Display results in dedicated LookupTax Test Result Panel
+            const testResultBox = document.getElementById('lookupTaxTestResultBox');
+            if (testResultBox) {
+                testResultBox.style.display = 'block';
+                document.getElementById('testResultTin').textContent = data.formattedTin || tinInput;
+                
+                const testBadge = document.getElementById('testResultBadge');
+                testBadge.textContent = data.taxpayerStatus || (data.isValid ? 'VALID' : 'INVALID');
+                testBadge.className = 'dc-status-chip ' + (data.isValid ? 'valid' : 'missing');
+                
+                document.getElementById('testResultMessage').textContent = data.message || 'LookupTax processed the query.';
+                document.getElementById('testResultRefId').textContent = data.verificationSource || ('Ref: ' + (data.taxClearanceNumber || ''));
+            }
+
+            // Timestamp
+            const now = new Date();
+            document.getElementById('birVerifiedAt').textContent = 'Source: ' + (data.verificationSource || 'LookupTax API') + ' • ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+
+            showToast(data.isValid ? 'LookupTax Live: ' + (data.registeredBusinessName || 'Format Valid') : 'LookupTax: ' + data.message);
+
+        } catch (err) {
+            console.error('TIN lookup failed:', err);
+            showToast('Verification request failed. Please check network connectivity.');
+        } finally {
+            spinner.style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+
+    function applyTestTinToDocument() {
+        if (!window.lastTestedTinData) return;
+        const data = window.lastTestedTinData;
+        
+        document.getElementById('birFormattedTin').textContent = data.formattedTin || '';
+        
+        const statusChip = document.getElementById('birStatusChip');
+        const statusText = document.getElementById('birStatusText');
+        statusText.textContent = data.taxpayerStatus || (data.isValid ? 'ACTIVE' : 'INVALID');
+        statusChip.className = 'dc-status-chip ' + (data.isValid ? 'valid' : 'missing');
+
+        document.getElementById('birRegisteredName').textContent = data.registeredBusinessName || 'No Registered Business Found';
+
+        const matchBadge = document.getElementById('birNameMatchBadge');
+        if (data.isValid) {
+            matchBadge.style.display = 'inline-flex';
+            matchBadge.style.background = data.nameMatchesSupplier ? '#E6F4EA' : '#FEF7E0';
+            matchBadge.style.color = data.nameMatchesSupplier ? '#1F8A4C' : '#B06000';
+            matchBadge.innerHTML = '<i data-lucide="' + (data.nameMatchesSupplier ? 'check' : 'alert-triangle') + '" style="width:12px; height:12px;"></i> <span>' + data.nameMatchScorePercentage + '% Name Match</span>';
+        }
+
+        document.getElementById('birRdo').textContent = data.rdoLocation || 'N/A';
+        document.getElementById('birTaxpayerType').textContent = data.taxpayerType || 'N/A';
+
+        const tcBox = document.getElementById('birTaxClearanceBox');
+        const tcTitle = document.getElementById('birTaxClearanceTitle');
+        const tcDetail = document.getElementById('birTaxClearanceDetail');
+        if (data.isValid && data.hasValidTaxClearance) {
+            tcBox.style.background = '#F4FBF7';
+            tcBox.style.borderColor = '#C6E7D1';
+            tcTitle.style.color = '#137333';
+            tcTitle.textContent = 'Tax Clearance in Good Standing';
+            const validDate = data.taxClearanceValidUntil ? new Date(data.taxClearanceValidUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Dec 31, 2026';
+            tcDetail.textContent = (data.taxClearanceNumber || 'TC-LT-2026') + ' • Valid until ' + validDate;
+        } else {
+            tcBox.style.background = '#FDF2F2';
+            tcBox.style.borderColor = '#F5C2C7';
+            tcTitle.style.color = '#C62828';
+            tcTitle.textContent = 'Tax Clearance Not Verified';
+            tcDetail.textContent = data.message || 'Taxpayer record has irregular compliance flags.';
+        }
+
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+
+        showToast('Supplier card updated with ' + data.formattedTin);
+    }
+</script>
+}

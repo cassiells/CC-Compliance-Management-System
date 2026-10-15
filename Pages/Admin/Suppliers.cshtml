@@ -1,0 +1,165 @@
+@page
+@model DoComply.Pages.Admin.SuppliersModel
+@{
+    ViewData["Title"] = "Supplier Directory";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Admin/Dashboard">Administrator</a> / <span>Suppliers</span>
+        </div>
+        <h1 class="dc-h1">Supplier Directory</h1>
+        <p class="dc-body-secondary">Monitor supplier accounts, registration details, and overall compliance standings.</p>
+    </div>
+
+    <div>
+        <button type="button" class="dc-btn dc-btn-primary" data-dc-modal-target="registerSupplierModal">
+            <i data-lucide="building-2"></i> Register Supplier
+        </button>
+    </div>
+</div>
+
+<!-- Controls Bar -->
+<div class="dc-card" style="margin-bottom: 20px; padding: 14px 20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div style="position:relative; width:340px; max-width:100%;">
+            <i data-lucide="search" style="position:absolute; left:12px; top:11px; width:18px; height:18px; color:var(--dc-text-secondary);"></i>
+            <input type="text" id="supplierLocalSearch" class="dc-form-control" style="padding-left:38px;" placeholder="Search suppliers by name, email or contact..." />
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button type="button" class="dc-btn dc-btn-secondary">
+                <i data-lucide="filter"></i> Filter Compliance
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Suppliers Table -->
+<div class="dc-table-container" data-dc-table-paginate="suppliersTable" data-dc-search-input="supplierLocalSearch" data-dc-per-page="12">
+    <table class="dc-table" id="suppliersTable">
+        <thead>
+            <tr>
+                <th>Supplier</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Compliance</th>
+                <th class="dc-table-action-col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model.Suppliers)
+            {
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="dc-avatar" style="width:32px; height:32px; font-size:12px; background:var(--dc-navy-primary);">
+                                @(string.IsNullOrEmpty(s.Name) ? "S" : s.Name.Substring(0, 1))
+                            </div>
+                            <strong>@s.Name</strong>
+                        </div>
+                    </td>
+                    <td>@s.ContactPerson</td>
+                    <td>@s.Email</td>
+                    <td>
+                        <span class="dc-status-chip valid">
+                            <span class="dc-status-dot"></span> @s.Status
+                        </span>
+                    </td>
+                    <td>
+                        <partial name="_ComplianceBadge" model="(s.ComplianceStatus, s.ComplianceReasons)" />
+                    </td>
+                    <td class="dc-table-action-col">
+                        <a href="/Admin/SupplierDetails?id=@s.Id&name=@Uri.EscapeDataString(s.Name)&status=@Uri.EscapeDataString(s.ComplianceStatus)&reasons=@Uri.EscapeDataString(s.ComplianceReasons)" 
+                           class="dc-btn dc-btn-secondary dc-btn-sm">
+                            View
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <partial name="_Pagination" model="(Model.Suppliers.Count, 12, 1)" />
+</div>
+
+<!-- Modal: Register Supplier Modal -->
+<div id="registerSupplierModal" class="dc-modal-backdrop">
+    <div class="dc-modal-surface">
+        <div class="dc-modal-header">
+            <h3 class="dc-modal-title">Register New Supplier</h3>
+            <button type="button" class="dc-modal-close" data-dc-modal-dismiss="registerSupplierModal">
+                <i data-lucide="x" style="width:18px; height:18px;"></i>
+            </button>
+        </div>
+        <form id="registerSupplierForm" method="post" asp-page-handler="Register">
+            <div class="dc-modal-body">
+                <div class="dc-form-group">
+                    <label class="dc-form-label">Supplier Name</label>
+                    <input type="text" id="regSupplierName" name="name" class="dc-form-control" placeholder="e.g. Acme Industrial Supplies" required />
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label">Contact Person</label>
+                    <input type="text" id="regContactPerson" name="contact" class="dc-form-control" placeholder="e.g. John Doe" required />
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label">Contact Email</label>
+                    <input type="email" id="regEmail" name="email" class="dc-form-control" placeholder="contact@acme.com" required />
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label">Initial Account Status</label>
+                    <input type="text" class="dc-form-control" value="Active" disabled />
+                </div>
+            </div>
+            <div class="dc-modal-footer">
+                <button type="button" class="dc-btn dc-btn-secondary" data-dc-modal-dismiss="registerSupplierModal">Cancel</button>
+                <button type="submit" class="dc-btn dc-btn-primary">Register Supplier</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function handleRegisterSupplierSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('regSupplierName').value;
+            const contact = document.getElementById('regContactPerson').value;
+            const email = document.getElementById('regEmail').value;
+
+            const tbody = document.querySelector('#suppliersTable tbody');
+            const row = document.createElement('tr');
+            row.style.backgroundColor = '#EBF2FA';
+            row.innerHTML = `
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="dc-avatar" style="width:32px; height:32px; font-size:12px; background:var(--dc-navy-primary);">${name.charAt(0)}</div>
+                        <strong>${name}</strong>
+                    </div>
+                </td>
+                <td>${contact}</td>
+                <td>${email}</td>
+                <td><span class="dc-status-chip valid"><span class="dc-status-dot"></span> Active</span></td>
+                <td>
+                    <div class="dc-compliance-badge-wrapper">
+                        <div class="dc-compliance-badge not-compliant"><span class="dc-status-dot"></span> NOT COMPLIANT</div>
+                        <div class="dc-compliance-reasons">5 missing documents</div>
+                    </div>
+                </td>
+                <td class="dc-table-action-col">
+                    <a href="/Admin/SupplierDetails?name=${encodeURIComponent(name)}&status=NOT+COMPLIANT&reasons=5+missing+documents" class="dc-btn dc-btn-secondary dc-btn-sm">View</a>
+                </td>
+            `;
+            tbody.insertBefore(row, tbody.firstChild);
+
+            closeDcModal('registerSupplierModal');
+            document.getElementById('registerSupplierForm').reset();
+            showToast(`Supplier "${name}" registered successfully.`);
+        }
+    </script>
+}

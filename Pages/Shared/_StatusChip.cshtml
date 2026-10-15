@@ -1,0 +1,32 @@
+@model string
+@{
+    string status = Model ?? "Missing";
+    string cssClass = "missing";
+
+    switch (status)
+    {
+        case "Valid":
+            cssClass = "valid";
+            break;
+        case "Pending Verification":
+            cssClass = "pending-verification";
+            break;
+        case "Missing":
+            cssClass = "missing";
+            break;
+        case "Rejected":
+            cssClass = "rejected";
+            break;
+        case "Expiring Soon":
+            cssClass = "expiring-soon";
+            break;
+        case "Expired":
+            cssClass = "expired";
+            break;
+    }
+}
+
+<span class="dc-status-chip @cssClass">
+    <span class="dc-status-dot"></span>
+    @status
+</span>

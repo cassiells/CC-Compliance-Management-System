@@ -1,0 +1,52 @@
+@page
+@model DoComply.Pages.Admin.ProcurementModel
+@{
+    ViewData["Title"] = "Procurement Approval Queue";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Admin/Dashboard">Administrator</a> / <span>Procurement</span>
+        </div>
+        <h1 class="dc-h1">Procurement Approval Queue</h1>
+        <p class="dc-body-secondary">Review department purchase requests against real-time supplier compliance standings.</p>
+    </div>
+</div>
+
+<div class="dc-table-container" data-dc-table-paginate="procTable" data-dc-per-page="12">
+    <table class="dc-table" id="procTable">
+        <thead>
+            <tr>
+                <th>Request</th>
+                <th>Supplier</th>
+                <th>Requested By</th>
+                <th>Status</th>
+                <th class="dc-table-action-col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var req in Model.Requests)
+            {
+                <tr>
+                    <td><strong>@req.RequestName</strong></td>
+                    <td>@req.SupplierName</td>
+                    <td>@req.RequestedBy</td>
+                    <td>
+                        <span class="dc-status-chip @(req.Status == "Approved" ? "valid" : "pending-verification")">
+                            <span class="dc-status-dot"></span> @req.Status
+                        </span>
+                    </td>
+                    <td class="dc-table-action-col">
+                        <a href="/Admin/ProcurementDetails?id=@req.Id&compliant=@(req.IsSupplierCompliant ? "true" : "false")&supplier=@Uri.EscapeDataString(req.SupplierName)&request=@Uri.EscapeDataString(req.RequestName)" 
+                           class="dc-btn dc-btn-primary dc-btn-sm">
+                            View Request
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <partial name="_Pagination" model="(Model.Requests.Count, 12, 1)" />
+</div>

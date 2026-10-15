@@ -1,0 +1,75 @@
+@page
+@model DoComply.Pages.Staff.SuppliersModel
+@{
+    ViewData["Title"] = "Supplier Directory";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Staff/Suppliers">Staff / HR</a> / <span>Suppliers</span>
+        </div>
+        <h1 class="dc-h1">Supplier Directory</h1>
+        <p class="dc-body-secondary">View supplier status and verified compliance standing before initiating procurement requests.</p>
+    </div>
+</div>
+
+<!-- Controls Bar -->
+<div class="dc-card" style="margin-bottom: 20px; padding: 14px 20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div style="position:relative; width:340px; max-width:100%;">
+            <i data-lucide="search" style="position:absolute; left:12px; top:11px; width:18px; height:18px; color:var(--dc-text-secondary);"></i>
+            <input type="text" id="staffSupplierSearch" class="dc-form-control" style="padding-left:38px;" placeholder="Search suppliers..." />
+        </div>
+        <div>
+            <span class="dc-caption" style="font-weight:600;">Read-Only Department View</span>
+        </div>
+    </div>
+</div>
+
+<!-- Suppliers Table -->
+<div class="dc-table-container" data-dc-table-paginate="staffSuppliersTable" data-dc-search-input="staffSupplierSearch" data-dc-per-page="12">
+    <table class="dc-table" id="staffSuppliersTable">
+        <thead>
+            <tr>
+                <th>Supplier</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Compliance</th>
+                <th class="dc-table-action-col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model.Suppliers)
+            {
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="dc-avatar" style="width:32px; height:32px; font-size:12px; background:var(--dc-navy-primary);">
+                                @(string.IsNullOrEmpty(s.Name) ? "S" : s.Name.Substring(0, 1))
+                            </div>
+                            <strong>@s.Name</strong>
+                        </div>
+                    </td>
+                    <td>@s.ContactPerson</td>
+                    <td>@s.Email</td>
+                    <td>
+                        <span class="dc-status-chip valid"><span class="dc-status-dot"></span> @s.Status</span>
+                    </td>
+                    <td>
+                        <partial name="_ComplianceBadge" model="(s.ComplianceStatus, s.ComplianceReasons)" />
+                    </td>
+                    <td class="dc-table-action-col">
+                        <a href="/Staff/SupplierDetails?name=@Uri.EscapeDataString(s.Name)&status=@Uri.EscapeDataString(s.ComplianceStatus)&reasons=@Uri.EscapeDataString(s.ComplianceReasons)" 
+                           class="dc-btn dc-btn-secondary dc-btn-sm">
+                            View Standing
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <partial name="_Pagination" model="(Model.Suppliers.Count, 12, 1)" />
+</div>

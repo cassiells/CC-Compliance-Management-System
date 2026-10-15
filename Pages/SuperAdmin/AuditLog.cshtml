@@ -1,0 +1,50 @@
+@page
+@model DoComply.Pages.SuperAdmin.AuditLogModel
+@{
+    ViewData["Title"] = "System Audit Log";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/SuperAdmin/Overview">Super Admin</a> / <span>Audit Log</span>
+        </div>
+        <h1 class="dc-h1">Audit Log</h1>
+        <p class="dc-body-secondary">Who performed the action, what did they do, and when.</p>
+    </div>
+</div>
+
+<div class="dc-table-container" data-dc-table-paginate="auditTable" data-dc-per-page="12">
+    <table class="dc-table" id="auditTable">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Action</th>
+                <th>Module</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var log in Model.Logs)
+            {
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <i data-lucide="user" style="width:16px; height:16px; color:var(--dc-navy-primary);"></i>
+                            <strong>@log.User</strong>
+                        </div>
+                    </td>
+                    <td>@log.Action</td>
+                    <td>
+                        <span class="dc-caption" style="font-weight:600; padding:2px 8px; border-radius:10px; background:#F1F5F9; color:var(--dc-text-primary);">
+                            @log.Module
+                        </span>
+                    </td>
+                    <td class="dc-caption">@log.Date</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <partial name="_Pagination" model="(Model.Logs.Count, 12, 1)" />
+</div>

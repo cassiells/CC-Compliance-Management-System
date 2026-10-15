@@ -1,0 +1,107 @@
+@page
+@model DoComply.Pages.Staff.NewRequestModel
+@{
+    ViewData["Title"] = "New Procurement Request";
+}
+
+<div class="dc-page-header">
+    <div class="dc-page-title-group">
+        <div class="dc-breadcrumb">
+            <a href="/Staff/Suppliers">Staff</a> / <a href="/Staff/MyRequests">My Requests</a> / <span>New Request</span>
+        </div>
+        <h1 class="dc-h1">Submit Procurement Request</h1>
+        <p class="dc-body-secondary">Initiate a department purchase request against registered supplier compliance records.</p>
+    </div>
+</div>
+
+<div class="dc-grid-12">
+    <div class="dc-col-8">
+        <div class="dc-card">
+            <div class="dc-card-header">
+                <h3 class="dc-card-title">Request Form</h3>
+                <span class="dc-caption">Department Requisition</span>
+            </div>
+
+            <form id="newRequestForm" method="post">
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="requestSupplier">Target Supplier</label>
+                    <select id="requestSupplier" name="Supplier" class="dc-form-control" required>
+                        @foreach (var sup in Model.SupplierOptions)
+                        {
+                            <option value="@sup" selected="@(sup == Model.Supplier ? "selected" : null)">@sup</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="requestName">Request Name / Title</label>
+                    <input type="text" id="requestName" name="RequestName" class="dc-form-control" placeholder="e.g. Q4 Office Stationery & Paper Bundles" required />
+                </div>
+
+                <div class="dc-form-group">
+                    <label class="dc-form-label" for="requestPurpose">Purpose of Procurement</label>
+                    <textarea id="requestPurpose" name="Purpose" class="dc-form-control" placeholder="Detail the business justification and department necessity..." required></textarea>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid var(--dc-border);">
+                    <a href="/Staff/MyRequests" class="dc-btn dc-btn-secondary">Cancel</a>
+                    <button type="submit" class="dc-btn dc-btn-primary">
+                        <i data-lucide="send"></i> Submit Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Guidance Panel -->
+    <div class="dc-col-4">
+        <div class="dc-card">
+            <div class="dc-card-header">
+                <h3 class="dc-card-title">Compliance Rule Note</h3>
+            </div>
+            <div style="font-size:13px; color:var(--dc-text-secondary); display:flex; flex-direction:column; gap:12px;">
+                <div style="display:flex; gap:8px;">
+                    <i data-lucide="shield-alert" style="color:var(--dc-navy-primary); width:18px; height:18px; flex-shrink:0;"></i>
+                    <span>Requests submitted for suppliers with non-compliant or expired standing will automatically alert Administrator approval queues.</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <i data-lucide="clock" style="color:var(--dc-navy-primary); width:18px; height:18px; flex-shrink:0;"></i>
+                    <span>Turnaround time for procurement authorization is typically 1 business day.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function handleNewRequestSubmit(e) {
+            e.preventDefault();
+            const sup = document.getElementById('requestSupplier').value;
+            const req = document.getElementById('requestName').value;
+            const pur = document.getElementById('requestPurpose').value;
+
+            if (!req.trim() || !pur.trim()) {
+                showToast('Please complete all required fields.');
+                return;
+            }
+
+            // Save to session state so MyRequests displays it immediately
+            const state = getSessionState();
+            if (!state.myRequests) state.myRequests = [];
+            state.myRequests.unshift({
+                id: Math.floor(Math.random() * 900) + 100,
+                requestName: req,
+                supplierName: sup,
+                dateSubmitted: 'Today, Just Now',
+                status: 'Pending Approval'
+            });
+            updateSessionState(state);
+
+            showToast('Procurement Request submitted successfully.');
+            setTimeout(() => {
+                window.location.href = '/Staff/MyRequests';
+            }, 1000);
+        }
+    </script>
+}
